@@ -4,14 +4,14 @@ import { appendEvent, getAllowlist, getSettings, saveCatalog } from './store.js'
 import { isWriteTool, serverTokens } from './tokens.js';
 
 /**
- * Sit between an MCP client and a stdio MCP server.
+ * The part of the proxy that does not care how the server is reached.
  * Every message is passed through unchanged, except:
  *  - tools/list results are filtered to the server's allow-list (if one exists)
  *  - tools/call for a tool outside the allow-list gets a JSON-RPC error
  * Every request/response pair is logged as one event.
+ * `toServer(line)` and `toClient(line)` deliver one JSON-RPC line each way.
  */
-export function runProxy({ name, command, args, stdin = process.stdin, stdout = process.stdout, stderr = process.stderr }) {
-  const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'], env: process.env });
+export function createTap({ name, toServer, toClient, stderr = process.stderr }) {
   const pending = new Map(); // id -> { ts, method, tool, bytes }
   let clientName = 'unknown';
 
@@ -29,68 +29,71 @@ export function runProxy({ name, command, args, stdin = process.stdin, stdout = 
     }
   };
 
-  const toClient = obj => stdout.write(JSON.stringify(obj) + '\n');
-
   // client -> server
-  stdin.on(
-    'data',
-    lineReader(line => {
-      const msg = tryParse(line);
-      if (msg && msg.method === 'initialize') {
-        clientName = msg.params?.clientInfo?.name || clientName;
+  const fromClient = line => {
+    const msg = tryParse(line);
+    if (msg && msg.method === 'initialize') {
+      clientName = msg.params?.clientInfo?.name || clientName;
+    }
+    if (msg && msg.method === 'tools/call') {
+      const tool = msg.params?.name;
+      const allow = allowed();
+      if (allow && !allow.has(tool)) {
+        log({ ts: Date.now(), method: 'tools/call', tool, ms: 0, reqBytes: line.length, resBytes: 0, status: 'blocked', write: isWriteTool(tool || '') });
+        toClient(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: `Tool "${tool}" is turned off in Headroom.` } }));
+        return;
       }
-      if (msg && msg.method === 'tools/call') {
-        const tool = msg.params?.name;
-        const allow = allowed();
-        if (allow && !allow.has(tool)) {
-          log({ ts: Date.now(), method: 'tools/call', tool, ms: 0, reqBytes: line.length, resBytes: 0, status: 'blocked', write: isWriteTool(tool || '') });
-          toClient({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: `Tool "${tool}" is turned off in Headroom.` } });
-          return;
-        }
-      }
-      if (msg && msg.id !== undefined && msg.method) {
-        pending.set(msg.id, { ts: Date.now(), method: msg.method, tool: msg.params?.name, bytes: line.length });
-      }
-      child.stdin.write(line + '\n');
-    })
-  );
+    }
+    if (msg && msg.id !== undefined && msg.method) {
+      pending.set(msg.id, { ts: Date.now(), method: msg.method, tool: msg.params?.name, bytes: line.length });
+    }
+    toServer(line);
+  };
 
   // server -> client
-  child.stdout.on(
-    'data',
-    lineReader(line => {
-      const msg = tryParse(line);
-      if (msg && msg.id !== undefined && !msg.method && pending.has(msg.id)) {
-        const req = pending.get(msg.id);
-        pending.delete(msg.id);
-        if (req.method === 'tools/list' && Array.isArray(msg.result?.tools)) {
-          const all = msg.result.tools;
-          saveCatalog(name, all, { tokens: serverTokens(all), source: 'proxy' });
-          const allow = allowed();
-          if (allow) {
-            msg.result.tools = all.filter(t => allow.has(t.name));
-            line = JSON.stringify(msg);
-          }
-        }
-        const isError = !!msg.error || msg.result?.isError === true;
-        if (req.method !== 'ping') {
-          log({
-            ts: req.ts,
-            method: req.method,
-            tool: req.method === 'tools/call' ? req.tool : undefined,
-            ms: Date.now() - req.ts,
-            reqBytes: req.bytes,
-            resBytes: line.length,
-            status: isError ? 'error' : 'ok',
-            write: req.method === 'tools/call' ? isWriteTool(req.tool || '') : false,
-          });
+  const fromServer = line => {
+    const msg = tryParse(line);
+    if (msg && msg.id !== undefined && !msg.method && pending.has(msg.id)) {
+      const req = pending.get(msg.id);
+      pending.delete(msg.id);
+      if (req.method === 'tools/list' && Array.isArray(msg.result?.tools)) {
+        const all = msg.result.tools;
+        saveCatalog(name, all, { tokens: serverTokens(all), source: 'proxy' });
+        const allow = allowed();
+        if (allow) {
+          msg.result.tools = all.filter(t => allow.has(t.name));
+          line = JSON.stringify(msg);
         }
       }
-      stdout.write(line + '\n');
-    })
-  );
+      const isError = !!msg.error || msg.result?.isError === true;
+      if (req.method !== 'ping') {
+        log({
+          ts: req.ts,
+          method: req.method,
+          tool: req.method === 'tools/call' ? req.tool : undefined,
+          ms: Date.now() - req.ts,
+          reqBytes: req.bytes,
+          resBytes: line.length,
+          status: isError ? 'error' : 'ok',
+          write: req.method === 'tools/call' ? isWriteTool(req.tool || '') : false,
+        });
+      }
+    }
+    toClient(line);
+  };
 
+  return { fromClient, fromServer };
+}
+
+/** Sit between an MCP client and a stdio MCP server. */
+export function runProxy({ name, command, args, stdin = process.stdin, stdout = process.stdout, stderr = process.stderr }) {
+  const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'], env: process.env });
+  const tap = createTap({ name, stderr, toServer: line => child.stdin.write(line + '\n'), toClient: line => stdout.write(line + '\n') });
+
+  stdin.on('data', lineReader(tap.fromClient));
+  child.stdout.on('data', lineReader(tap.fromServer));
   child.stderr.pipe(stderr);
+  child.stdin.on('error', () => {});
   stdin.on('end', () => child.stdin.end());
   child.on('exit', code => {
     if (stdout === process.stdout) process.exit(code ?? 0);

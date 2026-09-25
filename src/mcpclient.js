@@ -76,7 +76,7 @@ export async function listToolsHttp(entry, { timeoutMs = 20000 } = {}) {
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(timeoutMs),
     });
-    if (res.status === 401 || res.status === 403) throw new Error('needs sign-in (OAuth). Run the audit through the Mac app after connecting it in your client.');
+    if (res.status === 401 || res.status === 403) throw Object.assign(new Error('needs sign-in (OAuth), which only your client can do.'), { auth: true });
     if (!res.ok && res.status !== 202) throw new Error(`HTTP ${res.status}`);
     session = res.headers.get('mcp-session-id') || session;
     if (notify) return null;

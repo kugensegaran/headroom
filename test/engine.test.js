@@ -21,7 +21,11 @@ const { knownClients } = await import('../src/clients.js');
 
 /** Drive the proxy like a client would: send messages, collect responses by id. */
 function session(name = 'fake') {
-  const p = spawn(process.execPath, [CLI, 'proxy', '--name', name, '--', process.execPath, FAKE], { env: process.env });
+  return drive(process.execPath, [CLI, 'proxy', '--name', name, '--', process.execPath, FAKE]);
+}
+
+function drive(command, args, env = process.env) {
+  const p = spawn(command, args, { env });
   const waiting = new Map();
   let buf = '';
   p.stdout.on('data', d => {
@@ -108,7 +112,8 @@ test('install wraps stdio servers, leaves remote ones, and uninstall restores', 
   const r1 = applyInstall();
   const rc = r1.find(r => r.client === 'Cursor');
   assert.deepEqual(rc.changed, ['fake']);
-  assert.deepEqual(rc.skipped, ['remote']);
+  assert.deepEqual(rc.skipped.map(x => x.name), ['remote']);
+  assert.match(rc.skipped[0].reason, /run an audit first/);
   assert.ok(fs.existsSync(rc.backup));
   let cfg = JSON.parse(fs.readFileSync(cursor.file, 'utf8'));
   assert.ok(isWrapped(cfg.mcpServers.fake));
@@ -302,4 +307,80 @@ test('VS Code inputs and env values are never printed or logged', async () => {
   assert.ok(!stored.includes(secret));
   fs.rmSync(vscode.file);
   delete process.env.HR_TEST_SECRET;
+});
+
+test('bridge proxies a remote HTTP server over stdio and logs its calls', async () => {
+  const { startFakeHttp, TOKEN } = await import('./fake-http-server.js');
+  const fake = await startFakeHttp();
+  const s = drive(process.execPath, [CLI, 'bridge', '--name', 'remotefake', '--url', `${fake.url}/mcp`, '--header', `Authorization: Bearer ${TOKEN}`]);
+  const init = await s.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'bridge-client' } });
+  assert.equal(init.result.serverInfo.name, 'fake-http');
+  const list = await s.req('tools/list', {});
+  assert.equal(list.result.tools.length, 2);
+  const call = await s.req('tools/call', { name: 'lookup', arguments: { q: 'x' } });
+  assert.equal(call.result.content[0].text, 'remote ran lookup');
+  await s.close();
+  assert.equal(fake.seen.sessionsMissing, 0, 'session id is sent after initialize');
+  assert.equal(fake.seen.deletes, 1, 'session is closed on exit');
+
+  const calls = readEvents().filter(e => e.server === 'remotefake' && e.method === 'tools/call');
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].client, 'bridge-client');
+  assert.equal(calls[0].status, 'ok');
+  assert.ok(buildSummary().servers.find(x => x.name === 'remotefake'));
+
+  // A server that wants OAuth gets a clear JSON-RPC error, not a hang.
+  const o = drive(process.execPath, [CLI, 'bridge', '--name', 'oauthy', '--url', `${fake.url}/oauth`]);
+  const denied = await o.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'x' } });
+  assert.match(denied.error.message, /needs sign-in/);
+  await o.close();
+  fake.server.close();
+});
+
+test('install bridges remote servers the audit reached, skips OAuth ones, and uninstall restores them', async () => {
+  const { startFakeHttp, TOKEN } = await import('./fake-http-server.js');
+  const fake = await startFakeHttp();
+  const claudeFile = path.join(process.env.HEADROOM_USER_HOME, '.claude.json');
+  const original = {
+    mcpServers: {
+      remotefake: { type: 'http', url: `${fake.url}/mcp`, headers: { Authorization: 'Bearer ${HR_REMOTE_TOKEN}' } },
+      oauthy: { type: 'http', url: `${fake.url}/oauth` },
+      legacy: { type: 'sse', url: `${fake.url}/sse` },
+    },
+  };
+  fs.writeFileSync(claudeFile, JSON.stringify(original));
+  process.env.HR_REMOTE_TOKEN = TOKEN;
+
+  const reasons = () => Object.fromEntries(applyInstall({ dryRun: true }).find(r => r.client === 'Claude Code').skipped.map(x => [x.name, x.reason]));
+  assert.match(reasons().remotefake, /run an audit first/);
+
+  const audit = Object.fromEntries((await runAudit({ only: ['remotefake', 'oauthy'] })).map(r => [r.name, r]));
+  assert.equal(audit.remotefake.ok, true, audit.remotefake.error);
+  assert.equal(audit.oauthy.auth, true);
+
+  const report = applyInstall().find(r => r.client === 'Claude Code');
+  assert.deepEqual(report.changed, ['remotefake']);
+  assert.match(report.skipped.find(x => x.name === 'oauthy').reason, /OAuth/);
+  assert.match(report.skipped.find(x => x.name === 'legacy').reason, /SSE/);
+
+  const wrapped = JSON.parse(fs.readFileSync(claudeFile, 'utf8')).mcpServers.remotefake;
+  assert.ok(isWrapped(wrapped));
+  assert.equal(wrapped.type, 'stdio');
+  assert.ok(!wrapped.args.join(' ').includes('Bearer'), 'headers never go on the command line');
+
+  // Run it the way the client would.
+  const s = drive(wrapped.command, wrapped.args, { ...process.env, ...wrapped.env });
+  await s.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'claude-code' } });
+  const call = await s.req('tools/call', { name: 'send_message', arguments: { to: 'a' } });
+  assert.equal(call.result.content[0].text, 'remote ran send_message');
+  await s.close();
+
+  const again = await runAudit({ only: ['remotefake'] });
+  assert.equal(again[0].ok, true, 'audit sees through the wrapper');
+
+  applyInstall({ undo: true });
+  assert.deepEqual(JSON.parse(fs.readFileSync(claudeFile, 'utf8')), original);
+  fs.rmSync(claudeFile);
+  delete process.env.HR_REMOTE_TOKEN;
+  fake.server.close();
 });

@@ -25,6 +25,7 @@ export const paths = {
   backups: () => ensureDir(path.join(dataDir(), 'backups')),
   allowlist: () => path.join(ensureDir(dataDir()), 'allowlist.json'),
   settings: () => path.join(ensureDir(dataDir()), 'settings.json'),
+  auditStatus: () => path.join(ensureDir(dataDir()), 'audit-status.json'),
 };
 
 export function cliPath() {

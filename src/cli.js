@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { runProxy } from './proxy.js';
+import { bridgeOptions, runBridge } from './bridge.js';
 import { runAudit } from './audit.js';
 import { applyInstall } from './install.js';
 import { applyTrim, planTrim, resetTrim } from './trim.js';
@@ -18,6 +19,8 @@ Usage:
                                         Keep only the tools you used in the last N days (default 7)
   headroom serve [--port 7777]          Dashboard at http://127.0.0.1:7777
   headroom proxy --name NAME -- CMD...  (used by client configs) proxy one stdio server
+  headroom bridge --name NAME --url URL [--header "K: V"]
+                                        (used by client configs) proxy one remote HTTP server over stdio
 
 Data lives in: ${dataDir()}
 `;
@@ -73,6 +76,16 @@ async function main() {
       runProxy({ name, command: argv[sep + 1], args: argv.slice(sep + 2) });
       return;
     }
+    case 'bridge': {
+      const name = opt('--name');
+      const { url, headers } = bridgeOptions(argv.slice(1));
+      if (!name || !url) {
+        console.error('usage: headroom bridge --name NAME --url URL [--header "Name: value"]');
+        process.exit(2);
+      }
+      runBridge({ name, url, headers });
+      return;
+    }
     case 'audit': {
       const only = argv.slice(1).filter(a => !a.startsWith('--'));
       const results = await runAudit({ only: only.length ? only : undefined, onProgress: n => !flag('--json') && process.stderr.write(`checking ${n}...\n`) });
@@ -94,7 +107,10 @@ async function main() {
       for (const r of report) {
         if (r.error) console.log(`${r.client}: ${r.error}`);
         else if (r.readOnly) console.log(`${r.client}: not proxied, ${r.reason}: ${r.readOnly.join(', ')}`);
-        else console.log(`${r.client}: ${r.changed.length ? (cmd === 'install' ? 'proxied ' : 'restored ') + r.changed.join(', ') : 'nothing to change'}${r.skipped?.length ? ` (remote, not proxied: ${r.skipped.join(', ')})` : ''}${r.backup ? `\n  backup: ${r.backup}` : ''}`);
+        else {
+          console.log(`${r.client}: ${r.changed.length ? (cmd === 'install' ? 'proxied ' : 'restored ') + r.changed.join(', ') : 'nothing to change'}${r.backup ? `\n  backup: ${r.backup}` : ''}`);
+          for (const x of r.skipped || []) console.log(`  not proxied: ${x.name}, ${x.reason}`);
+        }
       }
       if (cmd === 'install' && !flag('--dry-run')) console.log('\nRestart your MCP clients so they pick up the change.');
       return;

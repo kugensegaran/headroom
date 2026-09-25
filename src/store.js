@@ -82,3 +82,12 @@ export function readCatalogs() {
     .map(f => readJson(path.join(dir, f), null))
     .filter(Boolean);
 }
+
+/** Outcome of the latest audit per server, used by install to decide which remote servers can be bridged. */
+export function getAuditStatus() {
+  return readJson(paths.auditStatus(), {});
+}
+
+export function setAuditStatus(patch) {
+  writeJson(paths.auditStatus(), { ...getAuditStatus(), ...patch });
+}

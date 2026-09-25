@@ -1,8 +1,8 @@
-import { discoverServers } from './clients.js';
+import { discoverServers, transportOf } from './clients.js';
 import { expandEntry, redact } from './expand.js';
 import { unwrap } from './install.js';
 import { listToolsHttp, listToolsStdio } from './mcpclient.js';
-import { saveCatalog } from './store.js';
+import { saveCatalog, setAuditStatus } from './store.js';
 import { serverTokens } from './tokens.js';
 
 function missingMessage(missing) {
@@ -20,7 +20,10 @@ export async function runAudit({ only, concurrency = 4, onProgress = () => {} } 
     if (only && !only.includes(s.name)) continue;
     const prev = byName.get(s.name);
     if (prev) prev.clients.push(s.clientLabel);
-    else byName.set(s.name, { ...s, entry: unwrap(s.entry), clients: [s.clientLabel] });
+    else {
+      const entry = unwrap(s.entry);
+      byName.set(s.name, { ...s, entry, transport: transportOf(entry), clients: [s.clientLabel] });
+    }
   }
   const queue = [...byName.values()];
   const results = [];
@@ -37,10 +40,11 @@ export async function runAudit({ only, concurrency = 4, onProgress = () => {} } 
         saveCatalog(s.name, res.tools, { tokens: serverTokens(res.tools), source: 'audit', transport: s.transport, clients: s.clients });
         results.push({ ...base, ok: true, tools: res.tools.length });
       } catch (err) {
-        results.push({ ...base, ok: false, error: redact(err.message, secrets) });
+        results.push({ ...base, ok: false, auth: !!err.auth, error: redact(err.message, secrets) });
       }
     }
   };
   await Promise.all(Array.from({ length: Math.min(concurrency, queue.length || 1) }, worker));
+  setAuditStatus(Object.fromEntries(results.map(r => [r.name, { ok: r.ok, auth: !!r.auth, transport: r.transport, ts: Date.now() }])));
   return results;
 }
