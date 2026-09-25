@@ -44,6 +44,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/engine"
 cp "$BIN" "$APP/Contents/MacOS/Headroom"
 cp "$ROOT/mac/Info.plist" "$APP/Contents/Info.plist"
+cp "$ROOT/mac/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 cp -R "$ROOT/src" "$ROOT/package.json" "$APP/Contents/Resources/engine/"
 (cd "$APP/Contents/Resources/engine" && npm install --omit=dev --silent)
 
