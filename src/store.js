@@ -30,6 +30,22 @@ export function appendEvent(event) {
   fs.appendFileSync(eventFile(event.ts), JSON.stringify(event) + '\n');
 }
 
+/** Delete event files older than the retention setting. Returns the files removed. */
+export function pruneEvents({ now = Date.now(), days = getSettings().retentionDays } = {}) {
+  const keep = Math.max(1, Number(days) || 30);
+  const cutoff = dayKey(now - (keep - 1) * 86400000);
+  const dir = paths.events();
+  const removed = [];
+  for (const f of fs.readdirSync(dir)) {
+    const m = f.match(/^events-(\d{4}-\d{2}-\d{2})\.jsonl$/);
+    if (m && m[1] < cutoff) {
+      fs.rmSync(path.join(dir, f), { force: true });
+      removed.push(f);
+    }
+  }
+  return removed;
+}
+
 /** Read events from the last `days` days, oldest first. */
 export function readEvents({ days = 1, since = 0 } = {}) {
   const out = [];
@@ -59,7 +75,7 @@ export function setAllowlist(value) {
 }
 
 export function getSettings() {
-  return { paused: false, budgetPct: 20, contextWindow: 200000, ...readJson(paths.settings(), {}) };
+  return { paused: false, budgetPct: 20, contextWindow: 200000, retentionDays: 30, ...readJson(paths.settings(), {}) };
 }
 
 export function setSettings(patch) {

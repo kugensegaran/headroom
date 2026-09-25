@@ -1,6 +1,6 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { eventFile, readEvents, setSettings } from './store.js';
+import { eventFile, getSettings, pruneEvents, readEvents, setSettings } from './store.js';
 import { buildSummary } from './summary.js';
 import { applyTrim, planTrim, resetTrim } from './trim.js';
 import { runAudit } from './audit.js';
@@ -61,6 +61,10 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
     for (const res of streams) res.write(data);
   });
 
+  pruneEvents();
+  const pruneTimer = setInterval(() => pruneEvents(), 6 * 3600000);
+  pruneTimer.unref();
+
   const server = http.createServer(async (req, res) => {
     // Only answer requests addressed to this machine (blocks DNS rebinding).
     const hostHeader = (req.headers.host || '').split(':')[0];
@@ -110,6 +114,30 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
         const body = await readBody(req);
         return send(res, 200, setSettings({ paused: !!body.paused }));
       }
+      if (req.method === 'GET' && url.pathname === '/api/settings') {
+        return send(res, 200, getSettings());
+      }
+      if (req.method === 'POST' && url.pathname === '/api/settings') {
+        const body = await readBody(req);
+        const patch = {};
+        const int = (v, min, max) => Number.isInteger(v) && v >= min && v <= max;
+        if ('contextWindow' in body) {
+          if (!int(body.contextWindow, 1000, 10000000)) return send(res, 400, { error: 'contextWindow must be a whole number of tokens' });
+          patch.contextWindow = body.contextWindow;
+        }
+        if ('budgetPct' in body) {
+          if (!int(body.budgetPct, 1, 100)) return send(res, 400, { error: 'budgetPct must be 1 to 100' });
+          patch.budgetPct = body.budgetPct;
+        }
+        if ('retentionDays' in body) {
+          if (!int(body.retentionDays, 1, 3650)) return send(res, 400, { error: 'retentionDays must be 1 to 3650' });
+          patch.retentionDays = body.retentionDays;
+        }
+        if ('paused' in body) patch.paused = !!body.paused;
+        const next = setSettings(patch);
+        if ('retentionDays' in patch) pruneEvents();
+        return send(res, 200, next);
+      }
       if (req.method === 'POST' && url.pathname === '/api/audit') {
         return send(res, 200, await runAudit());
       }
@@ -119,7 +147,10 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
     }
   });
 
-  server.on('close', stopTail);
+  server.on('close', () => {
+    stopTail();
+    clearInterval(pruneTimer);
+  });
   return new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(port, host, () => resolve(server));

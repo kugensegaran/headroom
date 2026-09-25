@@ -7,6 +7,7 @@ import { applyTrim, planTrim, resetTrim } from './trim.js';
 import { buildSummary } from './summary.js';
 import { startServer } from './server.js';
 import { dataDir } from './paths.js';
+import { pruneEvents } from './store.js';
 
 const HELP = `headroom: see what your MCP servers cost you and what they're doing.
 
@@ -64,6 +65,13 @@ function printSummary(s) {
   console.log('');
 }
 
+// Housekeeping must never break a server connection.
+function prune() {
+  try {
+    pruneEvents();
+  } catch {}
+}
+
 async function main() {
   switch (cmd) {
     case 'proxy': {
@@ -74,6 +82,7 @@ async function main() {
         process.exit(2);
       }
       runProxy({ name, command: argv[sep + 1], args: argv.slice(sep + 2) });
+      setTimeout(prune, 2000).unref();
       return;
     }
     case 'bridge': {
@@ -84,6 +93,7 @@ async function main() {
         process.exit(2);
       }
       runBridge({ name, url, headers });
+      setTimeout(prune, 2000).unref();
       return;
     }
     case 'audit': {

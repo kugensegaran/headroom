@@ -384,3 +384,34 @@ test('install bridges remote servers the audit reached, skips OAuth ones, and un
   delete process.env.HR_REMOTE_TOKEN;
   fake.server.close();
 });
+
+test('old event files are pruned by the retention setting', async () => {
+  const { pruneEvents, dayKey, getSettings } = await import('../src/store.js');
+  assert.equal(getSettings().retentionDays, 30);
+  const dir = path.join(process.env.HEADROOM_HOME, 'events');
+  const day = 86400000;
+  const now = Date.now();
+  const names = [0, 29, 30, 45].map(d => `events-${dayKey(now - d * day)}.jsonl`);
+  for (const n of names) if (!fs.existsSync(path.join(dir, n))) fs.writeFileSync(path.join(dir, n), '');
+  fs.writeFileSync(path.join(dir, 'notes.txt'), 'keep me');
+  const removed = pruneEvents({ now });
+  assert.deepEqual(removed.sort(), [names[2], names[3]].sort());
+  assert.ok(fs.existsSync(path.join(dir, names[0])) && fs.existsSync(path.join(dir, names[1])));
+  assert.ok(fs.existsSync(path.join(dir, 'notes.txt')));
+  assert.deepEqual(pruneEvents({ now, days: 1 }), [names[1]]);
+  assert.ok(readEvents().length > 0, "today's events survive");
+});
+
+test('settings API validates and saves', async () => {
+  const server = await startServer({ port: 0 });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const post = body => fetch(`${base}/api/settings`, { method: 'POST', headers: { 'x-headroom': '1', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal((await post({ retentionDays: 0 })).status, 400);
+  assert.equal((await post({ budgetPct: 'lots' })).status, 400);
+  const ok = await (await post({ retentionDays: 14, budgetPct: 25, contextWindow: 1000000 })).json();
+  assert.equal(ok.retentionDays, 14);
+  const got = await (await fetch(`${base}/api/settings`)).json();
+  assert.deepEqual([got.retentionDays, got.budgetPct, got.contextWindow], [14, 25, 1000000]);
+  await post({ retentionDays: 30, budgetPct: 20, contextWindow: 200000 });
+  server.close();
+});
