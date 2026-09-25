@@ -50,19 +50,54 @@ export function getAt(obj, keys) {
 }
 
 /**
- * Config files Headroom reads but never rewrites: shared project files that may be
- * checked into a repo. Returns [{ client, label, file, key, reason }].
+ * Server lists Headroom reads but never rewrites: shared project files that may be
+ * checked into a repo, and servers bundled in Claude Code plugins.
+ * Returns [{ client, label, scope, file, servers, vars, cwd, reason }].
  */
 export function readOnlySources() {
   const out = [];
+  const h = home();
   const claudeCode = knownClients().find(c => c.id === 'claude-code');
   const cfg = readJsonFile(claudeCode.file);
   const dirs = cfg && !cfg.__error && cfg.projects ? Object.keys(cfg.projects) : [];
   for (const dir of dirs) {
     const file = path.join(dir, '.mcp.json');
-    if (fs.existsSync(file)) {
-      out.push({ client: 'claude-code', label: 'Claude Code', scope: `project ${path.basename(dir)}`, file, key: 'mcpServers', reason: 'shared project file (.mcp.json), left unchanged' });
+    const json = readJsonFile(file);
+    if (!json || json.__error) continue;
+    out.push({ client: 'claude-code', label: 'Claude Code', scope: `project ${path.basename(dir)}`, file, servers: json.mcpServers, vars: {}, cwd: dir, reason: 'shared project file (.mcp.json), left unchanged' });
+  }
+  for (const plugin of enabledPlugins(h)) {
+    const vars = { CLAUDE_PLUGIN_ROOT: plugin.root };
+    const base = { client: 'claude-code', label: 'Claude Code', scope: `plugin ${plugin.name}`, vars, cwd: plugin.root, reason: 'plugin server, managed by the plugin' };
+    const mcpFile = path.join(plugin.root, '.mcp.json');
+    const mcp = readJsonFile(mcpFile);
+    if (mcp && !mcp.__error) out.push({ ...base, file: mcpFile, servers: mcp.mcpServers || mcp });
+    const manifestFile = path.join(plugin.root, '.claude-plugin', 'plugin.json');
+    const manifest = readJsonFile(manifestFile);
+    const declared = manifest && !manifest.__error ? manifest.mcpServers : null;
+    if (declared && typeof declared === 'object') out.push({ ...base, file: manifestFile, servers: declared });
+    else if (typeof declared === 'string') {
+      const file = path.resolve(plugin.root, declared.replace('${CLAUDE_PLUGIN_ROOT}', plugin.root));
+      const json = readJsonFile(file);
+      if (json && !json.__error && file !== mcpFile) out.push({ ...base, file, servers: json.mcpServers || json });
     }
+  }
+  return out;
+}
+
+/** Installed Claude Code plugins that are switched on in ~/.claude/settings.json. */
+function enabledPlugins(h) {
+  const settings = readJsonFile(path.join(h, '.claude', 'settings.json'));
+  const enabled = settings && !settings.__error ? settings.enabledPlugins || {} : {};
+  const installed = readJsonFile(path.join(h, '.claude', 'plugins', 'installed_plugins.json'));
+  const plugins = installed && !installed.__error ? installed.plugins || {} : {};
+  const out = [];
+  for (const [key, value] of Object.entries(plugins)) {
+    if (enabled[key] !== true) continue;
+    // v2 keeps a list of installs per plugin, v1 a single object.
+    const installs = Array.isArray(value) ? value : [value];
+    const root = installs.map(i => i && i.installPath).find(p => p && fs.existsSync(p));
+    if (root) out.push({ name: key.split('@')[0], root });
   }
   return out;
 }
@@ -80,13 +115,9 @@ export function discoverServers() {
   for (const client of knownClients()) {
     const cfg = readClientConfig(client);
     if (!cfg || cfg.__error) continue;
-    for (const block of serverBlocks(client, cfg)) add(client.id, client.label, block.scope, getAt(cfg, block.path), { project: block.project });
+    for (const block of serverBlocks(client, cfg)) add(client.id, client.label, block.scope, getAt(cfg, block.path), { cwd: block.project, vars: block.project ? { workspaceFolder: block.project } : {} });
   }
-  for (const src of readOnlySources()) {
-    const cfg = readJsonFile(src.file);
-    if (!cfg || cfg.__error) continue;
-    add(src.client, src.label, src.scope, cfg[src.key], { readOnly: src.reason, file: src.file });
-  }
+  for (const src of readOnlySources()) add(src.client, src.label, src.scope, src.servers, { readOnly: src.reason, file: src.file, cwd: src.cwd, vars: { workspaceFolder: src.cwd, ...src.vars } });
   return found;
 }
 

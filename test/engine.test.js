@@ -222,3 +222,34 @@ test('Claude Code project servers are found; ~/.claude.json blocks are wrapped, 
   assert.deepEqual(cfg.projects[proj].mcpServers.local, { command: process.execPath, args: [FAKE] });
   fs.rmSync(claudeFile);
 });
+
+test('servers in enabled Claude Code plugins are audited but not rewritten', async () => {
+  const { discoverServers } = await import('../src/clients.js');
+  const home = process.env.HEADROOM_USER_HOME;
+  const root = path.join(tmp, 'plugins', 'demo', '1.0.0');
+  const off = path.join(tmp, 'plugins', 'off', '1.0.0');
+  for (const dir of [root, off]) {
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, 'srv.mjs'), `import ${JSON.stringify(FAKE)};\n`);
+  }
+  const mcp = { demo: { command: process.execPath, args: ['${CLAUDE_PLUGIN_ROOT}/srv.mjs'] } };
+  fs.writeFileSync(path.join(root, '.mcp.json'), JSON.stringify(mcp));
+  fs.writeFileSync(path.join(off, '.mcp.json'), JSON.stringify({ off: mcp.demo }));
+  fs.mkdirSync(path.join(home, '.claude', 'plugins'), { recursive: true });
+  fs.writeFileSync(path.join(home, '.claude', 'settings.json'), JSON.stringify({ enabledPlugins: { 'demo@market': true, 'off@market': false } }));
+  fs.writeFileSync(
+    path.join(home, '.claude', 'plugins', 'installed_plugins.json'),
+    JSON.stringify({ version: 2, plugins: { 'demo@market': [{ scope: 'user', installPath: root }], 'off@market': [{ scope: 'user', installPath: off }] } })
+  );
+
+  const found = discoverServers().filter(s => s.scope?.startsWith('plugin'));
+  assert.deepEqual(found.map(s => [s.name, s.scope]), [['demo', 'plugin demo']]);
+  const [result] = await runAudit({ only: ['demo'] });
+  assert.equal(result.ok, true, result.error);
+  assert.equal(result.tools, 4);
+
+  const report = applyInstall({ dryRun: true });
+  assert.deepEqual(report.find(r => r.client === 'Claude Code (plugin demo)').readOnly, ['demo']);
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf8')), mcp);
+  fs.rmSync(path.join(home, '.claude'), { recursive: true });
+});

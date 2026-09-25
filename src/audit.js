@@ -1,9 +1,15 @@
-import path from 'node:path';
 import { discoverServers } from './clients.js';
+import { expandEntry, redact } from './expand.js';
 import { unwrap } from './install.js';
 import { listToolsHttp, listToolsStdio } from './mcpclient.js';
 import { saveCatalog } from './store.js';
 import { serverTokens } from './tokens.js';
+
+function missingMessage(missing) {
+  const inputs = missing.filter(m => m.startsWith('${input:'));
+  if (inputs.length) return `needs ${inputs.join(', ')}, which only VS Code can ask for. Its tools are measured once the proxy sees them.`;
+  return `${missing.join(', ')} is not set in the environment Headroom runs in.`;
+}
 
 /** Connect to every configured server, capture its tool list and token cost. */
 export async function runAudit({ only, concurrency = 4, onProgress = () => {} } = {}) {
@@ -20,13 +26,16 @@ export async function runAudit({ only, concurrency = 4, onProgress = () => {} } 
     while (queue.length) {
       const s = queue.shift();
       onProgress(s.name);
+      const { entry, missing, secrets } = expandEntry(s.entry, { vars: s.vars });
+      const base = { name: s.name, clients: s.clients, scope: s.scope, transport: s.transport, ...(s.readOnly ? { readOnly: s.readOnly } : {}) };
       try {
-        const res = s.transport === 'http' ? await listToolsHttp(s.entry) : s.transport === 'stdio' ? await listToolsStdio(s.entry, { cwd: s.project || (s.file && path.dirname(s.file)) }) : null;
+        if (missing.length) throw new Error(missingMessage(missing));
+        const res = s.transport === 'http' ? await listToolsHttp(entry) : s.transport === 'stdio' ? await listToolsStdio(entry, { cwd: entry.cwd || s.cwd }) : null;
         if (!res) throw new Error('unknown transport');
         saveCatalog(s.name, res.tools, { tokens: serverTokens(res.tools), source: 'audit', transport: s.transport, clients: s.clients });
-        results.push({ name: s.name, ok: true, tools: res.tools.length, clients: s.clients, transport: s.transport });
+        results.push({ ...base, ok: true, tools: res.tools.length });
       } catch (err) {
-        results.push({ name: s.name, ok: false, error: err.message, clients: s.clients, transport: s.transport });
+        results.push({ ...base, ok: false, error: redact(err.message, secrets) });
       }
     }
   };

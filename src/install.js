@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { getAt, knownClients, readClientConfig, readOnlySources, readJsonFile, serverBlocks, transportOf } from './clients.js';
+import { getAt, knownClients, readClientConfig, readOnlySources, serverBlocks, transportOf } from './clients.js';
 import { cliPath, paths } from './paths.js';
 
 export function isWrapped(entry) {
@@ -70,8 +70,7 @@ export function applyInstall({ undo = false, dryRun = false } = {}) {
   }
   if (!undo) {
     for (const src of readOnlySources()) {
-      const cfg = readJsonFile(src.file);
-      const names = cfg && !cfg.__error ? Object.keys(cfg[src.key] || {}) : [];
+      const names = src.servers && typeof src.servers === 'object' ? Object.keys(src.servers) : [];
       if (names.length) report.push({ client: `${src.label} (${src.scope})`, file: src.file, changed: [], skipped: [], readOnly: names, reason: src.reason });
     }
   }
