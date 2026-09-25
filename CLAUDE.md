@@ -44,7 +44,9 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
   - `trim.js` allow-list from real usage; idle servers are never trimmed
   - `server.js` localhost API; POSTs need header `x-headroom: 1`; Host must be 127.0.0.1 or localhost
   - `dashboard.html` the dashboard window, no build step
-- `mac/` Swift package (macOS 14+). `Engine.swift` process + API client, `PopoverView.swift` UI.
+- `mac/` Swift package (macOS 14+). `Engine.swift` process + API client, `PopoverView.swift` UI, `License.swift` Lemon Squeezy + Keychain, `Updater.swift` Sparkle, `AppWindows.swift` onboarding/settings/licence windows.
+  - `src/bridge.js` stdio-to-HTTP bridge, `src/doctor.js`, `src/license.js` trial and licence state, `src/expand.js` config variables and redaction.
+- `site/` static website and in-browser audit (`catalog.json` from scripts/build-catalog.js).
 - Data dir: `~/Library/Application Support/Headroom` (override with `HEADROOM_HOME`).
 
 ## Commands
@@ -60,7 +62,7 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 - Authorship: every commit and PR is Kugen Segaran <kugenesh@gmail.com> only. Never add Co-Authored-By, "Generated with Claude Code", session links or any AI credit to commits, PRs, release notes, the app's About box or the website. `.claude/settings.json` turns attribution off and `.githooks/commit-msg` strips it as a backstop.
 - The Swift code was written without a compiler. First job on a Mac: build it and fix whatever fails.
 - Design source of truth: Figma file at https://www.figma.com/design/d1szuOdW0BqvA9Sb8FXPMr (made under the working name "MCP Meter"; the product is now Headroom). Native macOS look: SF Pro, system colors, frosted materials, small controls. No custom fonts, no gradients in UI.
-- Never send tool call content off the machine. No analytics, no network calls except audits the user starts.
+- Never send tool call content off the machine. No analytics. The only network calls: audits the user starts, licence activation and a weekly validation (key and activation id only, to Lemon Squeezy), and Sparkle update checks.
 - `install` must stay reversible: back up before writing, `uninstall` unwraps in place.
 - UI and docs copy: sentence case, plain and direct, no em dashes.
 - Keep the engine dependency-free beyond js-tiktoken unless there is a strong reason.
@@ -68,6 +70,7 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 ## Status
 
 - 2026-09-25: engine done and tested against real servers (filesystem, memory, playwright). Swift app builds and runs on this Mac (full Xcode selected, no SDK fallback). Renamed from MCP Meter to Headroom.
+- 2026-09-25 (later): M1, M3, M4 done; M5 to M8 built and tested up to the points that need Kugen (see Waiting on Kugen). Swift tests: `cd mac && swift test`. Screenshots for QA: `open build/Headroom.app --args -show popover -appearance dark`, demo data via scripts/demo-data.js.
 
 ## Roadmap to v1.0 (development complete)
 
