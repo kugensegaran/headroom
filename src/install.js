@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { knownClients, readClientConfig, transportOf } from './clients.js';
+import { getAt, knownClients, readClientConfig, readOnlySources, readJsonFile, serverBlocks, transportOf } from './clients.js';
 import { cliPath, paths } from './paths.js';
 
 export function isWrapped(entry) {
@@ -44,16 +44,21 @@ export function applyInstall({ undo = false, dryRun = false } = {}) {
       report.push({ client: client.label, error: cfg.__error });
       continue;
     }
-    const servers = cfg[client.key] || {};
     const changed = [];
     const skipped = [];
-    for (const [name, entry] of Object.entries(servers)) {
-      const next = undo ? unwrap(entry) : wrap(name, entry);
-      if (next !== entry) {
-        servers[name] = next;
-        changed.push(name);
-      } else if (!undo && transportOf(entry) !== 'stdio') {
-        skipped.push(name);
+    for (const block of serverBlocks(client, cfg)) {
+      const servers = getAt(cfg, block.path);
+      if (!servers || typeof servers !== 'object') continue;
+      const label = name => (block.scope === 'user' ? name : `${name} (${block.scope})`);
+      for (const [name, entry] of Object.entries(servers)) {
+        if (!entry || typeof entry !== 'object') continue;
+        const next = undo ? unwrap(entry) : wrap(name, entry);
+        if (next !== entry) {
+          servers[name] = next;
+          changed.push(label(name));
+        } else if (!undo && transportOf(entry) !== 'stdio') {
+          skipped.push(label(name));
+        }
       }
     }
     let backupFile = null;
@@ -62,6 +67,13 @@ export function applyInstall({ undo = false, dryRun = false } = {}) {
       fs.writeFileSync(client.file, JSON.stringify(cfg, null, 2) + '\n');
     }
     report.push({ client: client.label, file: client.file, changed, skipped, backup: backupFile });
+  }
+  if (!undo) {
+    for (const src of readOnlySources()) {
+      const cfg = readJsonFile(src.file);
+      const names = cfg && !cfg.__error ? Object.keys(cfg[src.key] || {}) : [];
+      if (names.length) report.push({ client: `${src.label} (${src.scope})`, file: src.file, changed: [], skipped: [], readOnly: names, reason: src.reason });
+    }
   }
   return report;
 }

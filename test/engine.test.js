@@ -188,3 +188,37 @@ test('audit with no configured servers says so once', async () => {
   assert.match(out, /No MCP servers found/);
   assert.doesNotMatch(out, /No data yet/);
 });
+
+test('Claude Code project servers are found; ~/.claude.json blocks are wrapped, .mcp.json is left alone', async () => {
+  const { discoverServers } = await import('../src/clients.js');
+  const home = process.env.HEADROOM_USER_HOME;
+  const proj = path.join(tmp, 'proj-a');
+  fs.mkdirSync(proj, { recursive: true });
+  // A relative path only works if the audit runs in the project directory.
+  fs.writeFileSync(path.join(proj, 'srv.mjs'), `import ${JSON.stringify(FAKE)};\n`);
+  const shared = { mcpServers: { shared: { command: process.execPath, args: ['./srv.mjs'] } } };
+  fs.writeFileSync(path.join(proj, '.mcp.json'), JSON.stringify(shared));
+  const claudeFile = path.join(home, '.claude.json');
+  fs.writeFileSync(claudeFile, JSON.stringify({ numStartups: 3, projects: { [proj]: { allowedTools: [], mcpServers: { local: { command: process.execPath, args: [FAKE] } } }, '/gone': { mcpServers: {} } } }));
+
+  const found = discoverServers().filter(s => s.client === 'claude-code');
+  assert.deepEqual(found.map(s => [s.name, s.scope, !!s.readOnly]).sort(), [['local', 'project proj-a', false], ['shared', 'project proj-a', true]]);
+
+  const results = await runAudit({ only: ['local', 'shared'] });
+  assert.deepEqual(results.map(r => [r.name, r.ok, r.tools]).sort(), [['local', true, 4], ['shared', true, 4]]);
+
+  const report = applyInstall();
+  const cc = report.find(r => r.client === 'Claude Code');
+  assert.deepEqual(cc.changed, ['local (project proj-a)']);
+  const ro = report.find(r => r.readOnly);
+  assert.deepEqual(ro.readOnly, ['shared']);
+  let cfg = JSON.parse(fs.readFileSync(claudeFile, 'utf8'));
+  assert.ok(isWrapped(cfg.projects[proj].mcpServers.local));
+  assert.equal(cfg.numStartups, 3, 'other keys survive');
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(proj, '.mcp.json'), 'utf8')), shared);
+
+  applyInstall({ undo: true });
+  cfg = JSON.parse(fs.readFileSync(claudeFile, 'utf8'));
+  assert.deepEqual(cfg.projects[proj].mcpServers.local, { command: process.execPath, args: [FAKE] });
+  fs.rmSync(claudeFile);
+});

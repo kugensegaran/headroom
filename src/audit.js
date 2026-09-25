@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { discoverServers } from './clients.js';
 import { unwrap } from './install.js';
 import { listToolsHttp, listToolsStdio } from './mcpclient.js';
@@ -20,7 +21,7 @@ export async function runAudit({ only, concurrency = 4, onProgress = () => {} } 
       const s = queue.shift();
       onProgress(s.name);
       try {
-        const res = s.transport === 'http' ? await listToolsHttp(s.entry) : s.transport === 'stdio' ? await listToolsStdio(s.entry) : null;
+        const res = s.transport === 'http' ? await listToolsHttp(s.entry) : s.transport === 'stdio' ? await listToolsStdio(s.entry, { cwd: s.project || (s.file && path.dirname(s.file)) }) : null;
         if (!res) throw new Error('unknown transport');
         saveCatalog(s.name, res.tools, { tokens: serverTokens(res.tools), source: 'audit', transport: s.transport, clients: s.clients });
         results.push({ name: s.name, ok: true, tools: res.tools.length, clients: s.clients, transport: s.transport });

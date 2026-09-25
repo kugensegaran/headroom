@@ -93,6 +93,7 @@ async function main() {
       if (!report.length) console.log('No client configs found.');
       for (const r of report) {
         if (r.error) console.log(`${r.client}: ${r.error}`);
+        else if (r.readOnly) console.log(`${r.client}: not proxied, ${r.reason}: ${r.readOnly.join(', ')}`);
         else console.log(`${r.client}: ${r.changed.length ? (cmd === 'install' ? 'proxied ' : 'restored ') + r.changed.join(', ') : 'nothing to change'}${r.skipped?.length ? ` (remote, not proxied: ${r.skipped.join(', ')})` : ''}${r.backup ? `\n  backup: ${r.backup}` : ''}`);
       }
       if (cmd === 'install' && !flag('--dry-run')) console.log('\nRestart your MCP clients so they pick up the change.');
