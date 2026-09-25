@@ -75,7 +75,7 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [x] VS Code `inputs`/`${input:...}` values handled without leaking secrets into logs. Tests.
 - [x] Remote HTTP servers: `headroom bridge --name X --url U [--header K:V]` stdio-to-streamable-HTTP bridge, logged like stdio. `install` wraps url servers through it when the client supports stdio; OAuth-only servers are skipped with a clear reason. Tests with a local HTTP fake server.
 - [x] Event retention: prune event files older than 30 days (setting). Tests.
-- [ ] `headroom doctor`: checks node path, config paths, wrapped entries pointing at a missing cli.js, and fixes them.
+- [x] `headroom doctor`: checks node path, config paths, wrapped entries pointing at a missing cli.js, and fixes them.
 
 ### M4 App completeness
 - [ ] App icon and menu bar mark: assets in design/icon (see its README), wired into HeadroomApp.swift, Info.plist and build-app.sh. Remaining: build, check light and dark menu bars, tick.

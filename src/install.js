@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { getAt, knownClients, readClientConfig, readOnlySources, serverBlocks, transportOf } from './clients.js';
-import { cliPath, paths } from './paths.js';
+import { cliPath, nodePath, paths } from './paths.js';
 import { getAuditStatus } from './store.js';
 
 export function isWrapped(entry) {
@@ -27,14 +27,14 @@ export function wrap(name, entry) {
   if (transportOf(entry) === 'stdio') {
     return {
       ...entry,
-      command: process.execPath,
+      command: nodePath(),
       args: [cliPath(), 'proxy', '--name', name, '--', entry.command, ...(entry.args || [])],
     };
   }
   // Remote: the original entry rides along in env so headers stay out of argv and uninstall restores it exactly.
   return {
     ...(entry.type ? { type: 'stdio' } : {}),
-    command: process.execPath,
+    command: nodePath(),
     args: [cliPath(), 'bridge', '--name', name],
     env: { HEADROOM_BRIDGE: JSON.stringify(entry) },
   };
@@ -48,7 +48,7 @@ export function unwrap(entry) {
   return { ...entry, command: a[sep + 1], args: a.slice(sep + 2) };
 }
 
-function backup(client) {
+export function backupConfig(client) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const dest = path.join(paths.backups(), `${client.id}-${stamp}.json`);
   fs.copyFileSync(client.file, dest);
@@ -93,7 +93,7 @@ export function applyInstall({ undo = false, dryRun = false } = {}) {
     }
     let backupFile = null;
     if (changed.length && !dryRun) {
-      backupFile = backup(client);
+      backupFile = backupConfig(client);
       fs.writeFileSync(client.file, JSON.stringify(cfg, null, 2) + '\n');
     }
     report.push({ client: client.label, file: client.file, changed, skipped, backup: backupFile });

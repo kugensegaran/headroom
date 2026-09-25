@@ -8,16 +8,18 @@ import { buildSummary } from './summary.js';
 import { startServer } from './server.js';
 import { dataDir } from './paths.js';
 import { pruneEvents } from './store.js';
+import { runDoctor } from './doctor.js';
 
 const HELP = `headroom: see what your MCP servers cost you and what they're doing.
 
 Usage:
   headroom audit [--json] [server...]   Connect to every configured server and measure its tools
   headroom status [--json]              Context cost, usage and issues from the latest data
-  headroom install [--dry-run]          Route stdio servers in Claude, Claude Code, Cursor, VS Code through the proxy
+  headroom install [--dry-run]          Route servers in Claude, Claude Code, Cursor, VS Code through the proxy
   headroom uninstall                    Put every client config back to direct connections
   headroom trim [--days N] [--apply] [--include-idle] [--reset [server]]
                                         Keep only the tools you used in the last N days (default 7)
+  headroom doctor [--fix] [--json]      Check Node, configs and wrapped entries; --fix repairs broken paths
   headroom serve [--port 7777]          Dashboard at http://127.0.0.1:7777
   headroom proxy --name NAME -- CMD...  (used by client configs) proxy one stdio server
   headroom bridge --name NAME --url URL [--header "K: V"]
@@ -139,6 +141,15 @@ async function main() {
       }
       console.log(`\nTotal saving: about ${k(plan.savedTokens)} tokens per turn.`);
       console.log(flag('--apply') ? 'Applied. Restart your MCP clients to reload tool lists.' : 'Dry run. Add --apply to turn the unused tools off.');
+      return;
+    }
+    case 'doctor': {
+      const checks = runDoctor({ fix: flag('--fix') });
+      if (flag('--json')) return console.log(JSON.stringify(checks, null, 2));
+      const mark = { ok: 'ok   ', warn: 'warn ', error: 'error', fixed: 'fixed' };
+      for (const c of checks) console.log(`${mark[c.level]}  ${c.message}${c.backup ? `\n       backup: ${c.backup}` : ''}`);
+      if (checks.some(c => c.level === 'error')) process.exitCode = 1;
+      if (checks.some(c => c.level === 'fixed')) console.log('\nRestart your MCP clients so they pick up the change.');
       return;
     }
     case 'serve': {

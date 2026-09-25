@@ -415,3 +415,49 @@ test('settings API validates and saves', async () => {
   await post({ retentionDays: 30, budgetPct: 20, contextWindow: 200000 });
   server.close();
 });
+
+test('doctor finds wrapped entries with a missing node or cli.js and fixes them', async () => {
+  const { runDoctor } = await import('../src/doctor.js');
+  const cursor = knownClients().find(c => c.id === 'cursor');
+  const before = fs.readFileSync(cursor.file, 'utf8');
+  const broken = {
+    mcpServers: {
+      fake: { command: '/nowhere/node', args: ['/moved/Headroom.app/Contents/Resources/engine/src/cli.js', 'proxy', '--name', 'fake', '--', process.execPath, FAKE] },
+      lost: { command: process.execPath, args: [CLI, 'proxy', '--name', 'lost', '--', 'no-such-server-binary'] },
+    },
+  };
+  fs.writeFileSync(cursor.file, JSON.stringify(broken));
+
+  const checks = runDoctor();
+  const cursorChecks = checks.filter(c => c.message.startsWith('Cursor'));
+  assert.ok(cursorChecks.some(c => c.level === 'error' && /Node is missing.*Headroom is missing/.test(c.message)));
+  assert.ok(cursorChecks.some(c => c.level === 'warn' && /no-such-server-binary/.test(c.message)));
+  assert.equal(fs.readFileSync(cursor.file, 'utf8'), JSON.stringify(broken), 'no fix without --fix');
+
+  const fixed = runDoctor({ fix: true });
+  assert.ok(fixed.some(c => c.level === 'fixed'));
+  assert.ok(fixed.some(c => c.backup && fs.existsSync(c.backup)));
+  const entry = JSON.parse(fs.readFileSync(cursor.file, 'utf8')).mcpServers.fake;
+  assert.equal(fs.realpathSync(entry.command), fs.realpathSync(process.execPath));
+  assert.equal(entry.args[0], CLI);
+  assert.ok(!runDoctor().some(c => c.level === 'error'));
+
+  const s = drive(entry.command, entry.args);
+  const init = await s.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'cursor' } });
+  assert.equal(init.result.serverInfo.name, 'fake');
+  await s.close();
+  fs.writeFileSync(cursor.file, before);
+});
+
+test('configs get a Node path that survives Homebrew upgrades', async () => {
+  const { nodePath } = await import('../src/paths.js');
+  const prefix = path.join(tmp, 'brew');
+  const cellar = path.join(prefix, 'Cellar', 'node', '26.1.0', 'bin');
+  fs.mkdirSync(cellar, { recursive: true });
+  fs.writeFileSync(path.join(cellar, 'node'), '');
+  fs.mkdirSync(path.join(prefix, 'bin'), { recursive: true });
+  fs.symlinkSync(path.join(cellar, 'node'), path.join(prefix, 'bin', 'node'));
+  assert.equal(nodePath(path.join(cellar, 'node')), path.join(prefix, 'bin', 'node'));
+  assert.equal(nodePath('/usr/local/bin/node'), '/usr/local/bin/node');
+  assert.equal(nodePath(path.join(prefix, 'Cellar', 'node', '9.9.9', 'bin', 'node')), path.join(prefix, 'Cellar', 'node', '9.9.9', 'bin', 'node'), 'no stable link, keep as is');
+});
