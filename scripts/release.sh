@@ -6,7 +6,7 @@
 #   - a "Developer ID Application" certificate in the login keychain (or DEVELOPER_ID="Developer ID Application: Name (TEAM)")
 #   - notarization credentials stored once with: xcrun notarytool store-credentials headroom
 #   - the Sparkle private key in the keychain (generate_keys)
-#   - gh logged in, and the public releases repo (RELEASE_REPO, default kugensegaran/headroom-releases)
+#   - gh logged in, and the public releases repo (RELEASE_REPO, default kugensegaran/headroom-site)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,7 +14,7 @@ APP="$ROOT/build/Headroom.app"
 OUT="$ROOT/build/release"
 ADHOC=0
 [[ "${1:-}" == "--adhoc" ]] && ADHOC=1
-RELEASE_REPO="${RELEASE_REPO:-kugensegaran/headroom-releases}"
+RELEASE_REPO="${RELEASE_REPO:-kugensegaran/headroom-site}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-headroom}"
 SPARKLE_BIN="$ROOT/mac/.build/artifacts/sparkle/Sparkle/bin"
 

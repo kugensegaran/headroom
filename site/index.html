@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headroom for Mac: see what your MCP servers cost</title>
+<meta name="description" content="A menu bar app that shows what your MCP servers cost you in context tokens, and what they are doing, live. Free in-browser audit.">
+<link rel="icon" href="icon.png">
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --text2: rgba(0,0,0,.56); --line: rgba(0,0,0,.1);
+  --blue: #0071e3; --blue-text: #0066cc; --field: #f5f5f7; --shot: #dfe3e8;
+  --c1: #0a84ff; --c2: #bf5af2; --c3: #ff9f0a; --c4: #30b0c7; --c5: #34c759; --c6: #8e8e93; --orange: #c93400; --red: #d70015;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #000; --bg2: #161617; --card: #1d1d1f; --text: #f5f5f7; --text2: rgba(255,255,255,.6); --line: rgba(255,255,255,.14);
+    --blue: #0a84ff; --blue-text: #2997ff; --field: #2c2c2e; --shot: #26282c; --orange: #ff9f0a; --red: #ff453a; }
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.47 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: var(--blue-text); text-decoration: none; }
+a:hover { text-decoration: underline; }
+.wrap { max-width: 980px; margin: 0 auto; padding: 0 22px; }
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 44px; padding: 0 22px; border-radius: 980px; background: var(--blue); color: #fff; font-size: 17px; border: 0; cursor: pointer; font-family: inherit; }
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+.btn.small { height: 28px; padding: 0 14px; font-size: 13px; }
+.btn[aria-disabled="true"] { background: var(--line); color: var(--text2); cursor: default; filter: none; }
+.muted { color: var(--text2); }
+
+nav.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: .5px solid var(--line); }
+nav.top .wrap { display: flex; align-items: center; height: 52px; gap: 28px; font-size: 13px; }
+nav.top .brand { font-weight: 600; font-size: 15px; color: var(--text); margin-right: auto; display: flex; align-items: center; gap: 8px; }
+nav.top .brand img { width: 20px; height: 20px; }
+nav.top a:not(.brand):not(.btn) { color: var(--text); opacity: .8; }
+
+.hero { text-align: center; padding: 88px 0 48px; }
+.hero .eyebrow { font-size: 21px; font-weight: 600; margin: 0 0 6px; }
+.hero h1 { font-size: clamp(40px, 7vw, 64px); line-height: 1.06; letter-spacing: -.015em; margin: 0 0 16px; font-weight: 700; }
+.hero p.lede { font-size: clamp(19px, 2.4vw, 24px); color: var(--text2); max-width: 640px; margin: 0 auto 28px; }
+.hero .ctas { display: flex; gap: 24px; justify-content: center; align-items: center; flex-wrap: wrap; }
+
+.shot { margin: 24px auto 0; max-width: 1040px; padding: 0 22px; }
+.shot .desk { background: var(--shot); border-radius: 18px; padding: 56px 24px; display: flex; justify-content: center; }
+.shot img { width: 340px; max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.15); }
+
+section.audit { background: var(--bg2); padding: 96px 0; margin-top: 96px; }
+section h2 { font-size: clamp(32px, 4.5vw, 48px); line-height: 1.08; letter-spacing: -.01em; margin: 0 0 10px; text-align: center; }
+section .sub { text-align: center; color: var(--text2); font-size: 19px; margin: 0 auto 40px; max-width: 640px; }
+.cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.card { background: var(--card); border-radius: 18px; padding: 24px; min-width: 0; }
+.card h3 { font-size: 17px; margin: 0 0 12px; }
+textarea { width: 100%; height: 290px; resize: vertical; border: 0; border-radius: 12px; background: var(--field); color: var(--text); padding: 14px; font: 12px/1.5 ui-monospace, "SF Mono", Menlo, monospace; }
+textarea:focus { outline: 2px solid var(--blue); }
+.run { display: flex; align-items: center; gap: 14px; margin-top: 14px; font-size: 13px; }
+.run .btn { flex-shrink: 0; white-space: nowrap; }
+.big { font-size: 40px; font-weight: 600; letter-spacing: -.01em; line-height: 1.1; }
+.bar { display: flex; gap: 1.5px; height: 10px; border-radius: 5px; overflow: hidden; background: var(--field); margin: 16px 0 12px; }
+.rows { list-style: none; padding: 0; margin: 0; font-size: 14px; }
+.rows li { display: grid; grid-template-columns: 18px 1fr auto 70px; gap: 8px; align-items: center; padding: 7px 0; border-bottom: .5px solid var(--line); }
+.rows li .dot { width: 8px; height: 8px; border-radius: 50%; }
+.rows li .num { text-align: right; font-variant-numeric: tabular-nums; }
+.rows li input { margin: 0; accent-color: var(--blue); }
+.note { font-size: 13px; margin: 12px 0 0; }
+.note b { font-weight: 600; }
+.warn { color: var(--orange); }
+.err { color: var(--red); font-size: 13px; }
+.empty { color: var(--text2); font-size: 15px; padding: 40px 0; text-align: center; }
+
+.features { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; padding: 96px 0; }
+.features svg { width: 28px; height: 28px; stroke: var(--blue); fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.features h3 { font-size: 17px; margin: 10px 0 4px; }
+.features p { font-size: 14px; color: var(--text2); margin: 0; }
+
+.pricing { background: var(--bg2); border-radius: 18px; text-align: center; padding: 64px 24px; margin-bottom: 96px; }
+.pricing .small { font-size: 13px; color: var(--text2); margin-top: 18px; }
+
+footer { border-top: .5px solid var(--line); font-size: 12px; color: var(--text2); }
+footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding: 24px 22px; flex-wrap: wrap; }
+
+@media (max-width: 760px) {
+  nav.top a.hide-sm { display: none; }
+  .cards { grid-template-columns: 1fr; }
+  .features { grid-template-columns: 1fr 1fr; }
+  section.audit { padding: 64px 0; margin-top: 64px; }
+}
+</style>
+</head>
+<body>
+<nav class="top" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="icon.png" alt="">Headroom</a>
+    <a class="hide-sm" href="#audit">Free audit</a>
+    <a class="hide-sm" href="#features">Features</a>
+    <a class="hide-sm" href="#pricing">Pricing</a>
+    <a class="btn small buy" href="#pricing">Buy</a>
+  </div>
+</nav>
+
+<header class="hero wrap">
+  <p class="eyebrow">Headroom for Mac</p>
+  <h1>Every tool call.<br>Every token.</h1>
+  <p class="lede">A menu bar app that shows what your MCP servers cost you, and what they're doing, live.</p>
+  <div class="ctas">
+    <a class="btn buy" id="buy-hero" href="#pricing">Buy</a>
+    <a href="#audit">Try the free audit ›</a>
+  </div>
+</header>
+
+<div class="shot">
+  <div class="desk">
+    <picture>
+      <source srcset="popover-dark.png" media="(prefers-color-scheme: dark)">
+      <img src="popover-light.png" alt="The Headroom menu bar popover: 59,016 tokens of context loaded per turn across six servers, with a note that 82 tools went unused this week." width="340" height="576">
+    </picture>
+  </div>
+</div>
+
+<section class="audit" id="audit">
+  <div class="wrap">
+    <h2>Check your setup in seconds.</h2>
+    <p class="sub">Paste your config. It runs in your browser, so nothing leaves your machine.</p>
+    <div class="cards">
+      <div class="card">
+        <h3>MCP config</h3>
+        <textarea id="config" spellcheck="false" aria-label="MCP config JSON">{
+  "mcpServers": {
+    "playwright": { "command": "npx", "args": ["@playwright/mcp@latest"] },
+    "notion": { "command": "npx", "args": ["-y", "@notionhq/notion-mcp-server"] },
+    "github": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-github"] },
+    "filesystem": { "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "~/Documents"] },
+    "my-server": { "command": "node", "args": ["/Users/me/my-server.js"] }
+  }
+}</textarea>
+        <div class="run"><button class="btn small" id="run">Run audit</button><span class="muted">Claude Desktop, Claude Code, Cursor or VS Code config. Local servers you wrote yourself need the Mac app.</span></div>
+      </div>
+      <div class="card" id="report" aria-live="polite"><div class="empty">Your report shows up here.</div></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <section class="features" id="features" aria-label="Features">
+    <div>
+      <svg viewBox="0 0 28 28"><path d="M2 14h6l3-8 6 16 3-8h6"/></svg>
+      <h3>Live traffic</h3>
+      <p>Every call from Claude, Cursor and VS Code, with latency and status.</p>
+    </div>
+    <div>
+      <svg viewBox="0 0 28 28"><path d="M4 20a10 10 0 1 1 20 0"/><path d="M14 20l5-7"/></svg>
+      <h3>Exact token cost</h3>
+      <p>See what each server loads into every turn, local servers included.</p>
+    </div>
+    <div>
+      <svg viewBox="0 0 28 28"><path d="M5 8h18M5 14h12M5 20h6"/></svg>
+      <h3>One-click trim</h3>
+      <p>Keep the tools you use. Turn the rest off for every client.</p>
+    </div>
+    <div>
+      <svg viewBox="0 0 28 28"><rect x="6" y="12" width="16" height="12" rx="2.5"/><path d="M9.5 12V9a4.5 4.5 0 0 1 9 0v3"/></svg>
+      <h3>Stays on your Mac</h3>
+      <p>No account, no cloud. Your tool calls never leave the machine.</p>
+    </div>
+  </section>
+
+  <section class="pricing" id="pricing">
+    <h2>Pay once. Keep it.</h2>
+    <p class="sub" id="price-line" style="margin-bottom:28px">One payment. No account. Try everything free for 14 days.</p>
+    <a class="btn buy" id="buy-main" href="#pricing">Buy Headroom</a>
+    <p class="small">12 months of updates included · keeps working after that · 14-day refund · macOS 14 or later</p>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>Headroom. Not affiliated with Anthropic or the MCP project.</span>
+    <span><a href="privacy.html">Privacy</a> · <a href="privacy.html#refunds">Refunds</a><span id="contact"></span></span>
+  </div>
+</footer>
+
+<script type="module">
+// Filled in at launch. While null, buy buttons say "Coming soon".
+const STORE = { price: null, checkoutUrl: null, contactEmail: null };
+
+import { audit, withoutServers } from './audit.js';
+
+const COLORS = ['--c1', '--c2', '--c3', '--c4', '--c5', '--c6'].map(v => `var(${v})`);
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const k = n => (n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : String(n));
+
+for (const a of document.querySelectorAll('.buy')) {
+  if (STORE.checkoutUrl) {
+    a.href = STORE.checkoutUrl;
+    if (a.id === 'buy-hero' && STORE.price) a.textContent = `Buy for ${STORE.price}`;
+  } else if (a.id !== 'buy-hero' && !a.classList.contains('small')) {
+    a.textContent = 'Coming soon';
+    a.setAttribute('aria-disabled', 'true');
+    a.removeAttribute('href');
+  }
+}
+if (STORE.price) $('price-line').textContent = `${STORE.price}, one time. No account. Try everything free for 14 days.`;
+if (STORE.contactEmail) $('contact').innerHTML = ` · <a href="mailto:${esc(STORE.contactEmail)}">Contact</a>`;
+
+let catalog = null;
+const loadCatalog = async () => (catalog ||= await (await fetch('catalog.json')).json());
+
+async function run() {
+  const text = $('config').value;
+  const report = $('report');
+  let r;
+  try {
+    r = audit(text, await loadCatalog());
+  } catch (err) {
+    report.innerHTML = `<h3>Report</h3><p class="err">That does not look like valid JSON: ${esc(err.message)}</p>`;
+    return;
+  }
+  if (!r.rows.length) {
+    report.innerHTML = `<h3>Report</h3><p class="muted">No MCP servers found. Paste the whole file, including the "mcpServers" (or VS Code "servers") part.</p>`;
+    return;
+  }
+  const known = r.rows.filter(x => x.tokens !== null);
+  report.innerHTML = `<h3>Report</h3>
+    <div class="big">${r.total.toLocaleString('en-US')}</div>
+    <div class="muted" style="font-size:14px">tokens loaded every turn, ${Math.round(r.pct * 100)}% of a ${k(r.contextWindow)} window${r.unknown ? `, plus ${r.unknown} server${r.unknown === 1 ? '' : 's'} not measured here` : ''}</div>
+    <div class="bar">${known.map((x, i) => `<div title="${esc(x.name)}" style="width:${(x.tokens / r.contextWindow) * 100}%;background:${COLORS[i % COLORS.length]}"></div>`).join('')}</div>
+    <ul class="rows">${r.rows.map((x, i) => `<li>
+      <input type="checkbox" checked data-name="${esc(x.name)}" aria-label="Keep ${esc(x.name)}">
+      <span>${x.tokens !== null ? `<span class="dot" style="display:inline-block;background:${COLORS[known.indexOf(x) % COLORS.length]};margin-right:8px"></span>` : ''}${esc(x.name)}${x.tokens === null ? ` <span class="muted">${x.remote ? 'remote, needs the Mac app' : 'not in the catalog, the Mac app measures it'}</span>` : ''}</span>
+      <span class="muted">${x.tools !== null ? `${x.tools} tools` : ''}</span>
+      <span class="num">${x.tokens !== null ? x.tokens.toLocaleString('en-US') : '–'}</span></li>`).join('')}</ul>
+    ${r.clashes.length ? `<p class="note warn"><b>${r.clashes.length} name clash${r.clashes.length === 1 ? '' : 'es'}.</b> A tool called ${esc(r.clashes[0].tool)} appears in ${esc(r.clashes[0].servers.join(', '))}.</p>` : ''}
+    ${r.writeTools.length ? `<p class="note warn"><b>${r.writeTools.length} write tools.</b> Including ${esc(r.writeTools.slice(0, 3).join(', '))}.</p>` : ''}
+    <p class="note"><a href="#" id="download">Download config without unchecked servers ›</a></p>
+    <p class="note muted">Measured ${esc(catalog.measured)} with the latest published versions and a close estimate of Claude's tokenizer. Your versions may differ; the Mac app measures what you actually run.</p>`;
+  $('download').onclick = e => {
+    e.preventDefault();
+    const remove = [...report.querySelectorAll('input[type=checkbox]')].filter(c => !c.checked).map(c => c.dataset.name);
+    const blob = new Blob([withoutServers(text, remove)], { type: 'application/json' });
+    const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'mcp-config.json' });
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+}
+$('run').onclick = run;
+</script>
+</body>
+</html>

@@ -22,6 +22,9 @@ export function serverTokens(tools) {
 
 const WRITE_RE = /(^|_|-|\b)(create|update|delete|remove|write|edit|post|send|push|merge|drop|insert|upsert|move|rename|exec|execute|run|deploy|publish|archive|close|set|add|patch|put|destroy|kill|revoke)(_|-|\b|[A-Z]|$)/i;
 
+// Reads that happen to contain a write verb, e.g. Notion's API-post-search or get_pull_request.
+const READ_RE = /(^|_|-|\b)(search|query|get|list|read|fetch|find|view|describe)(_|-|\b|[A-Z]|$)/i;
+
 export function isWriteTool(name) {
-  return WRITE_RE.test(name);
+  return WRITE_RE.test(name) && !READ_RE.test(name);
 }

@@ -17,7 +17,8 @@
   It prints a public key (a line of base64). That one is public: paste it to Claude, or put it in `mac/Info.plist` under `SUPublicEDKey`. Keep the private key in the Keychain; back it up with `generate_keys -x ~/sparkle-private-key` somewhere safe (a password manager), because losing it means existing installs can never update.
 - **M7 Developer ID certificate.** None is installed on this Mac. In Xcode: Settings, Accounts, your Apple Developer team, Manage Certificates, +, Developer ID Application. Then `security find-identity -v -p codesigning` should list it.
 - **M7 notarization credentials.** In Terminal (not chat): create an app-specific password at account.apple.com, then `xcrun notarytool store-credentials headroom --apple-id kugenesh@gmail.com --team-id YOURTEAMID` and paste the password when it asks.
-- **M6 where updates are hosted.** This repo is private, so its Releases cannot be downloaded by customers. Proposed: a public repo `kugensegaran/headroom-releases` with GitHub Pages serving `appcast.xml` and each DMG attached to a Release there (already set as `SUFeedURL` in `mac/Info.plist`). Say yes and Claude creates it, or name another host.
+- **One public repo for the website and updates.** This repo is private, so customers cannot download from it and free GitHub Pages will not serve it. Proposed: a public repo `kugensegaran/headroom-site` holding only the built website (site/), `appcast.xml`, and each release's DMG as a GitHub Release. `SUFeedURL`, `scripts/release.sh` and `scripts/deploy-site.sh` already point there. Say yes and Claude creates it and deploys, or name another host.
+- **M8 before the site goes live.** Set the price, checkout URL and (optionally) a contact email in the `STORE` block at the bottom of `site/index.html`, or give them to Claude. Check the refund promise on the privacy page (14 days, taken from the Figma design) is what you want.
 
 A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. One-time purchase, local only. Owner: Kugen Segaran.
 
@@ -107,7 +108,7 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 
 ### M6 Updates
 - [ ] WAITING Sparkle 2 via SwiftPM. STOP: Kugen runs Sparkle's `generate_keys` so the private key stays in his Keychain; public key goes in Info.plist. (Sparkle is integrated, embedded by build-app.sh, and switches itself on once `SUPublicEDKey` is set; "Check for Updates…" appears in the menu then.)
-- [ ] WAITING Appcast hosted on GitHub Releases or Pages; updates offered only while the licence's update window is open. (Window filter done and tested in UpdateWindow; hosting waits on Kugen's yes to a public releases repo.)
+- [ ] WAITING Appcast hosted on GitHub Releases or Pages; updates offered only while the licence's update window is open. (Window filter done and tested in UpdateWindow; hosting waits on Kugen's yes to the public headroom-site repo.)
 
 ### M7 Release pipeline
 - [ ] WAITING `scripts/release.sh`: bundle node, sign node and app with Developer ID (hardened runtime, JIT entitlements for node), notarize, staple, build DMG, draft GitHub Release. Kugen has an Apple Developer account. (Written; `--adhoc` run verified: bundled node runs under hardened runtime with JIT entitlements, app launches from the DMG build. The notarized run waits on the certificate and credentials.)
@@ -115,8 +116,8 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [ ] WAITING Notarized DMG installs and runs on a clean user account.
 
 ### M8 Website
-- [ ] `site/`: landing page and free in-browser audit from the Figma design, static, no tracking, no AI credit. Deploy to GitHub Pages.
-- [ ] STOP: domain choice and DNS by Kugen.
+- [ ] WAITING `site/`: landing page and free in-browser audit from the Figma design, static, no tracking, no AI credit. Deploy to GitHub Pages. (Built and tested: page from the Figma frame in light, dark and mobile; free audit uses site/catalog.json, 11 servers measured by scripts/build-catalog.js. Deploy waits on the public repo; run scripts/deploy-site.sh.)
+- [ ] WAITING STOP: domain choice and DNS by Kugen. (Then `SITE_DOMAIN=yourdomain scripts/deploy-site.sh` and point DNS at GitHub Pages.)
 
 ### M9 QA and docs
 - [ ] docs/QA.md checklist run end to end on a clean account; fix what fails.

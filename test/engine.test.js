@@ -535,3 +535,36 @@ test('licence: 14-day trial, 30-day offline grace, and what stops when unlicense
   server.close();
   fs.writeFileSync(path.join(process.env.HEADROOM_HOME, 'license.json'), JSON.stringify(saved));
 });
+
+test('website audit: loose JSON, every config shape, catalog lookup, clashes, trimmed download', async () => {
+  const { parseLoose, serversIn, audit, withoutServers } = await import('../site/audit.js');
+  const catalog = JSON.parse(fs.readFileSync(new URL('../site/catalog.json', import.meta.url), 'utf8'));
+  assert.ok(catalog.servers.length >= 3 && catalog.measured);
+
+  const vscode = `{
+    // VS Code allows comments
+    "servers": { "pw": { "type": "stdio", "command": "npx", "args": ["@playwright/mcp@latest"], }, },
+    "inputs": [ { "id": "x", "description": "has // not a comment" } ],
+  }`;
+  assert.equal(parseLoose(vscode).inputs[0].description, 'has // not a comment');
+  assert.deepEqual(Object.keys(serversIn(parseLoose(vscode))), ['pw']);
+  assert.deepEqual(Object.keys(serversIn({ projects: { '/a': { mcpServers: { p: { command: 'x' } } } } })), ['p']);
+  assert.deepEqual(Object.keys(serversIn({ bare: { url: 'https://mcp.deepwiki.com/mcp' } })), ['bare']);
+
+  const cfg = JSON.stringify({ mcpServers: {
+    pw: { command: 'npx', args: ['@playwright/mcp@latest'] },
+    fs: { command: process.execPath, args: ['/x/src/cli.js', 'proxy', '--name', 'fs', '--', 'npx', '-y', '@modelcontextprotocol/server-filesystem', '/tmp'] },
+    fs2: { command: 'npx', args: ['-y', '@modelcontextprotocol/server-filesystem', '/other'] },
+    mine: { command: 'node', args: ['mine.js'] },
+  }, other: 1 });
+  const r = audit(cfg, catalog);
+  const pw = catalog.servers.find(s => s.id === 'playwright');
+  assert.equal(r.rows.find(x => x.name === 'pw').tokens, pw.tools.reduce((s, t) => s + t.tokens, 0));
+  assert.equal(r.rows.find(x => x.name === 'fs').known, 'Filesystem', 'wrapped entries still match');
+  assert.equal(r.unknown, 1);
+  assert.ok(r.clashes.some(c => c.servers.includes('fs') && c.servers.includes('fs2')));
+  assert.equal(r.rows[r.rows.length - 1].name, 'mine', 'unmeasured servers sort last');
+  const trimmed = JSON.parse(withoutServers(cfg, ['fs2', 'mine']));
+  assert.deepEqual(Object.keys(trimmed.mcpServers), ['pw', 'fs']);
+  assert.equal(trimmed.other, 1);
+});

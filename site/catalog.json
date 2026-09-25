@@ -1,0 +1,862 @@
+{
+ "measured": "2026-09-25",
+ "tokenizer": "cl100k_base estimate",
+ "servers": [
+  {
+   "id": "filesystem",
+   "name": "Filesystem",
+   "match": [
+    "@modelcontextprotocol/server-filesystem"
+   ],
+   "version": "0.2.0",
+   "tools": [
+    {
+     "name": "read_file",
+     "tokens": 105,
+     "write": false
+    },
+    {
+     "name": "read_text_file",
+     "tokens": 184,
+     "write": false
+    },
+    {
+     "name": "read_media_file",
+     "tokens": 91,
+     "write": false
+    },
+    {
+     "name": "read_multiple_files",
+     "tokens": 140,
+     "write": false
+    },
+    {
+     "name": "write_file",
+     "tokens": 91,
+     "write": true
+    },
+    {
+     "name": "edit_file",
+     "tokens": 161,
+     "write": true
+    },
+    {
+     "name": "create_directory",
+     "tokens": 95,
+     "write": true
+    },
+    {
+     "name": "list_directory",
+     "tokens": 97,
+     "write": false
+    },
+    {
+     "name": "list_directory_with_sizes",
+     "tokens": 128,
+     "write": false
+    },
+    {
+     "name": "directory_tree",
+     "tokens": 132,
+     "write": false
+    },
+    {
+     "name": "move_file",
+     "tokens": 108,
+     "write": true
+    },
+    {
+     "name": "search_files",
+     "tokens": 148,
+     "write": false
+    },
+    {
+     "name": "get_file_info",
+     "tokens": 92,
+     "write": false
+    },
+    {
+     "name": "list_allowed_directories",
+     "tokens": 77,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "memory",
+   "name": "Memory",
+   "match": [
+    "@modelcontextprotocol/server-memory"
+   ],
+   "version": "0.6.3",
+   "tools": [
+    {
+     "name": "create_entities",
+     "tokens": 125,
+     "write": true
+    },
+    {
+     "name": "create_relations",
+     "tokens": 132,
+     "write": true
+    },
+    {
+     "name": "add_observations",
+     "tokens": 115,
+     "write": true
+    },
+    {
+     "name": "delete_entities",
+     "tokens": 74,
+     "write": true
+    },
+    {
+     "name": "delete_observations",
+     "tokens": 115,
+     "write": true
+    },
+    {
+     "name": "delete_relations",
+     "tokens": 131,
+     "write": true
+    },
+    {
+     "name": "read_graph",
+     "tokens": 40,
+     "write": false
+    },
+    {
+     "name": "search_nodes",
+     "tokens": 73,
+     "write": false
+    },
+    {
+     "name": "open_nodes",
+     "tokens": 71,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "sequential-thinking",
+   "name": "Sequential Thinking",
+   "match": [
+    "@modelcontextprotocol/server-sequential-thinking"
+   ],
+   "version": "2026.8.31",
+   "tools": [
+    {
+     "name": "sequentialthinking",
+     "tokens": 859,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "everything",
+   "name": "Everything (reference)",
+   "match": [
+    "@modelcontextprotocol/server-everything"
+   ],
+   "version": "2.0.0",
+   "tools": [
+    {
+     "name": "echo",
+     "tokens": 56,
+     "write": false
+    },
+    {
+     "name": "get-annotated-message",
+     "tokens": 102,
+     "write": false
+    },
+    {
+     "name": "get-env",
+     "tokens": 46,
+     "write": false
+    },
+    {
+     "name": "get-resource-links",
+     "tokens": 78,
+     "write": false
+    },
+    {
+     "name": "get-resource-reference",
+     "tokens": 85,
+     "write": false
+    },
+    {
+     "name": "get-structured-content",
+     "tokens": 74,
+     "write": false
+    },
+    {
+     "name": "get-sum",
+     "tokens": 69,
+     "write": false
+    },
+    {
+     "name": "get-tiny-image",
+     "tokens": 43,
+     "write": false
+    },
+    {
+     "name": "gzip-file-as-resource",
+     "tokens": 202,
+     "write": false
+    },
+    {
+     "name": "toggle-simulated-logging",
+     "tokens": 50,
+     "write": false
+    },
+    {
+     "name": "toggle-subscriber-updates",
+     "tokens": 47,
+     "write": true
+    },
+    {
+     "name": "trigger-long-running-operation",
+     "tokens": 84,
+     "write": true
+    },
+    {
+     "name": "simulate-research-query",
+     "tokens": 129,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "playwright",
+   "name": "Playwright",
+   "match": [
+    "@playwright/mcp"
+   ],
+   "version": "1.64.0-alpha-1789764292000",
+   "tools": [
+    {
+     "name": "browser_close",
+     "tokens": 45,
+     "write": true
+    },
+    {
+     "name": "browser_resize",
+     "tokens": 79,
+     "write": false
+    },
+    {
+     "name": "browser_console_messages",
+     "tokens": 164,
+     "write": false
+    },
+    {
+     "name": "browser_handle_dialog",
+     "tokens": 85,
+     "write": false
+    },
+    {
+     "name": "browser_emulate_media",
+     "tokens": 249,
+     "write": false
+    },
+    {
+     "name": "browser_evaluate",
+     "tokens": 164,
+     "write": false
+    },
+    {
+     "name": "browser_file_upload",
+     "tokens": 86,
+     "write": false
+    },
+    {
+     "name": "browser_drop",
+     "tokens": 209,
+     "write": true
+    },
+    {
+     "name": "browser_find",
+     "tokens": 192,
+     "write": false
+    },
+    {
+     "name": "browser_fill_form",
+     "tokens": 223,
+     "write": false
+    },
+    {
+     "name": "browser_press_key",
+     "tokens": 83,
+     "write": false
+    },
+    {
+     "name": "browser_type",
+     "tokens": 167,
+     "write": false
+    },
+    {
+     "name": "browser_navigate",
+     "tokens": 64,
+     "write": false
+    },
+    {
+     "name": "browser_navigate_back",
+     "tokens": 53,
+     "write": false
+    },
+    {
+     "name": "browser_network_requests",
+     "tokens": 166,
+     "write": false
+    },
+    {
+     "name": "browser_network_request",
+     "tokens": 190,
+     "write": false
+    },
+    {
+     "name": "browser_run_code_unsafe",
+     "tokens": 178,
+     "write": true
+    },
+    {
+     "name": "browser_take_screenshot",
+     "tokens": 306,
+     "write": false
+    },
+    {
+     "name": "browser_snapshot",
+     "tokens": 162,
+     "write": false
+    },
+    {
+     "name": "browser_click",
+     "tokens": 176,
+     "write": false
+    },
+    {
+     "name": "browser_drag",
+     "tokens": 154,
+     "write": false
+    },
+    {
+     "name": "browser_hover",
+     "tokens": 95,
+     "write": false
+    },
+    {
+     "name": "browser_select_option",
+     "tokens": 133,
+     "write": false
+    },
+    {
+     "name": "browser_tabs",
+     "tokens": 125,
+     "write": false
+    },
+    {
+     "name": "browser_wait_for",
+     "tokens": 102,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "context7",
+   "name": "Context7",
+   "match": [
+    "@upstash/context7-mcp",
+    "mcp.context7.com"
+   ],
+   "version": "4.1.1",
+   "tools": [
+    {
+     "name": "resolve-library-id",
+     "tokens": 610,
+     "write": false
+    },
+    {
+     "name": "query-docs",
+     "tokens": 378,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "chrome-devtools",
+   "name": "Chrome DevTools",
+   "match": [
+    "chrome-devtools-mcp"
+   ],
+   "version": "1.10.1",
+   "tools": [
+    {
+     "name": "click",
+     "tokens": 134,
+     "write": false
+    },
+    {
+     "name": "close_page",
+     "tokens": 86,
+     "write": true
+    },
+    {
+     "name": "drag",
+     "tokens": 131,
+     "write": false
+    },
+    {
+     "name": "emulate",
+     "tokens": 389,
+     "write": false
+    },
+    {
+     "name": "evaluate_script",
+     "tokens": 290,
+     "write": false
+    },
+    {
+     "name": "fill",
+     "tokens": 163,
+     "write": false
+    },
+    {
+     "name": "fill_form",
+     "tokens": 243,
+     "write": false
+    },
+    {
+     "name": "get_console_message",
+     "tokens": 108,
+     "write": false
+    },
+    {
+     "name": "get_css_styles",
+     "tokens": 248,
+     "write": false
+    },
+    {
+     "name": "get_network_request",
+     "tokens": 215,
+     "write": false
+    },
+    {
+     "name": "handle_dialog",
+     "tokens": 118,
+     "write": false
+    },
+    {
+     "name": "hover",
+     "tokens": 113,
+     "write": false
+    },
+    {
+     "name": "lighthouse_audit",
+     "tokens": 173,
+     "write": false
+    },
+    {
+     "name": "list_console_messages",
+     "tokens": 323,
+     "write": false
+    },
+    {
+     "name": "list_network_requests",
+     "tokens": 270,
+     "write": false
+    },
+    {
+     "name": "list_pages",
+     "tokens": 51,
+     "write": false
+    },
+    {
+     "name": "navigate_page",
+     "tokens": 255,
+     "write": false
+    },
+    {
+     "name": "new_page",
+     "tokens": 213,
+     "write": false
+    },
+    {
+     "name": "performance_analyze_insight",
+     "tokens": 169,
+     "write": false
+    },
+    {
+     "name": "performance_start_trace",
+     "tokens": 227,
+     "write": false
+    },
+    {
+     "name": "performance_stop_trace",
+     "tokens": 122,
+     "write": false
+    },
+    {
+     "name": "press_key",
+     "tokens": 168,
+     "write": false
+    },
+    {
+     "name": "resize_page",
+     "tokens": 102,
+     "write": false
+    },
+    {
+     "name": "select_page",
+     "tokens": 103,
+     "write": false
+    },
+    {
+     "name": "take_heapsnapshot",
+     "tokens": 114,
+     "write": false
+    },
+    {
+     "name": "take_screenshot",
+     "tokens": 251,
+     "write": false
+    },
+    {
+     "name": "take_snapshot",
+     "tokens": 187,
+     "write": false
+    },
+    {
+     "name": "type_text",
+     "tokens": 116,
+     "write": false
+    },
+    {
+     "name": "upload_file",
+     "tokens": 173,
+     "write": false
+    },
+    {
+     "name": "wait_for",
+     "tokens": 157,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "github",
+   "name": "GitHub (reference npm server)",
+   "match": [
+    "@modelcontextprotocol/server-github"
+   ],
+   "version": "0.6.2",
+   "tools": [
+    {
+     "name": "create_or_update_file",
+     "tokens": 170,
+     "write": true
+    },
+    {
+     "name": "search_repositories",
+     "tokens": 109,
+     "write": false
+    },
+    {
+     "name": "create_repository",
+     "tokens": 102,
+     "write": true
+    },
+    {
+     "name": "get_file_contents",
+     "tokens": 116,
+     "write": false
+    },
+    {
+     "name": "push_files",
+     "tokens": 170,
+     "write": true
+    },
+    {
+     "name": "create_issue",
+     "tokens": 112,
+     "write": true
+    },
+    {
+     "name": "create_pull_request",
+     "tokens": 191,
+     "write": true
+    },
+    {
+     "name": "fork_repository",
+     "tokens": 105,
+     "write": false
+    },
+    {
+     "name": "create_branch",
+     "tokens": 122,
+     "write": true
+    },
+    {
+     "name": "list_commits",
+     "tokens": 87,
+     "write": false
+    },
+    {
+     "name": "list_issues",
+     "tokens": 141,
+     "write": false
+    },
+    {
+     "name": "update_issue",
+     "tokens": 134,
+     "write": true
+    },
+    {
+     "name": "add_issue_comment",
+     "tokens": 83,
+     "write": true
+    },
+    {
+     "name": "search_code",
+     "tokens": 93,
+     "write": false
+    },
+    {
+     "name": "search_issues",
+     "tokens": 147,
+     "write": false
+    },
+    {
+     "name": "search_users",
+     "tokens": 107,
+     "write": false
+    },
+    {
+     "name": "get_issue",
+     "tokens": 77,
+     "write": false
+    },
+    {
+     "name": "get_pull_request",
+     "tokens": 96,
+     "write": false
+    },
+    {
+     "name": "list_pull_requests",
+     "tokens": 214,
+     "write": false
+    },
+    {
+     "name": "create_pull_request_review",
+     "tokens": 345,
+     "write": true
+    },
+    {
+     "name": "merge_pull_request",
+     "tokens": 151,
+     "write": true
+    },
+    {
+     "name": "get_pull_request_files",
+     "tokens": 100,
+     "write": false
+    },
+    {
+     "name": "get_pull_request_status",
+     "tokens": 102,
+     "write": false
+    },
+    {
+     "name": "update_pull_request_branch",
+     "tokens": 124,
+     "write": true
+    },
+    {
+     "name": "get_pull_request_comments",
+     "tokens": 98,
+     "write": false
+    },
+    {
+     "name": "get_pull_request_reviews",
+     "tokens": 97,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "notion",
+   "name": "Notion",
+   "match": [
+    "@notionhq/notion-mcp-server"
+   ],
+   "version": "1.0.0",
+   "tools": [
+    {
+     "name": "API-get-user",
+     "tokens": 568,
+     "write": false
+    },
+    {
+     "name": "API-get-users",
+     "tokens": 627,
+     "write": false
+    },
+    {
+     "name": "API-get-self",
+     "tokens": 559,
+     "write": false
+    },
+    {
+     "name": "API-post-search",
+     "tokens": 1058,
+     "write": false
+    },
+    {
+     "name": "API-get-block-children",
+     "tokens": 655,
+     "write": false
+    },
+    {
+     "name": "API-patch-block-children",
+     "tokens": 674,
+     "write": true
+    },
+    {
+     "name": "API-retrieve-a-block",
+     "tokens": 575,
+     "write": false
+    },
+    {
+     "name": "API-update-a-block",
+     "tokens": 686,
+     "write": true
+    },
+    {
+     "name": "API-delete-a-block",
+     "tokens": 574,
+     "write": true
+    },
+    {
+     "name": "API-retrieve-a-page",
+     "tokens": 642,
+     "write": false
+    },
+    {
+     "name": "API-patch-page",
+     "tokens": 846,
+     "write": true
+    },
+    {
+     "name": "API-post-page",
+     "tokens": 779,
+     "write": true
+    },
+    {
+     "name": "API-retrieve-a-page-property",
+     "tokens": 663,
+     "write": false
+    },
+    {
+     "name": "API-retrieve-a-comment",
+     "tokens": 649,
+     "write": false
+    },
+    {
+     "name": "API-create-a-comment",
+     "tokens": 683,
+     "write": true
+    },
+    {
+     "name": "API-query-data-source",
+     "tokens": 726,
+     "write": false
+    },
+    {
+     "name": "API-retrieve-a-data-source",
+     "tokens": 580,
+     "write": false
+    },
+    {
+     "name": "API-update-a-data-source",
+     "tokens": 679,
+     "write": true
+    },
+    {
+     "name": "API-create-a-data-source",
+     "tokens": 647,
+     "write": true
+    },
+    {
+     "name": "API-list-data-source-templates",
+     "tokens": 600,
+     "write": false
+    },
+    {
+     "name": "API-retrieve-a-database",
+     "tokens": 576,
+     "write": false
+    },
+    {
+     "name": "API-move-page",
+     "tokens": 602,
+     "write": true
+    },
+    {
+     "name": "API-retrieve-page-markdown",
+     "tokens": 669,
+     "write": false
+    },
+    {
+     "name": "API-update-page-markdown",
+     "tokens": 1240,
+     "write": true
+    }
+   ]
+  },
+  {
+   "id": "deepwiki",
+   "name": "DeepWiki",
+   "match": [
+    "mcp.deepwiki.com"
+   ],
+   "version": "2.14.3",
+   "tools": [
+    {
+     "name": "ask_wiki_question",
+     "tokens": 108,
+     "write": false
+    },
+    {
+     "name": "read_wiki_contents",
+     "tokens": 58,
+     "write": false
+    },
+    {
+     "name": "read_wiki_structure",
+     "tokens": 62,
+     "write": false
+    }
+   ]
+  },
+  {
+   "id": "cloudflare-docs",
+   "name": "Cloudflare Docs",
+   "match": [
+    "docs.mcp.cloudflare.com"
+   ],
+   "version": "0.4.13",
+   "tools": [
+    {
+     "name": "search_cloudflare_documentation",
+     "tokens": 200,
+     "write": false
+    },
+    {
+     "name": "migrate_pages_to_workers_guide",
+     "tokens": 52,
+     "write": false
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Headroom privacy and refunds</title>
+<link rel="icon" href="icon.png">
+<style>
+:root { --bg: #fff; --text: #1d1d1f; --text2: rgba(0,0,0,.56); --blue: #0066cc; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root { --bg: #000; --text: #f5f5f7; --text2: rgba(255,255,255,.6); --blue: #2997ff; } }
+body { margin: 0; background: var(--bg); color: var(--text); font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif; }
+main { max-width: 680px; margin: 0 auto; padding: 56px 22px 80px; }
+h1 { font-size: 40px; margin: 0 0 24px; } h2 { font-size: 24px; margin: 40px 0 8px; }
+a { color: var(--blue); } p, li { color: var(--text); } .muted { color: var(--text2); }
+</style>
+</head>
+<body>
+<main>
+  <p><a href="./">‹ Headroom</a></p>
+  <h1>Privacy</h1>
+  <p>Headroom runs on your Mac. It has no account, no analytics and no tracking, on the app or on this website.</p>
+  <h2>What stays on your Mac</h2>
+  <ul>
+    <li>Your MCP configs, the tool lists of your servers, and the log of tool calls. Headroom records which tool was called, when, how long it took, its size and whether it worked. It does not record what the tools were sent or sent back.</li>
+    <li>Backups of your configs, made before Headroom changes them.</li>
+  </ul>
+  <p>All of it lives in <code>~/Library/Application Support/Headroom</code>. Call history is deleted after 30 days by default; you can change that in Settings.</p>
+  <h2>What leaves your Mac</h2>
+  <ul>
+    <li><b>Audits you start</b> connect to your remote MCP servers to list their tools, the same way your client does.</li>
+    <li><b>Licence checks</b> send your licence key and an activation id to Lemon Squeezy, our payment provider, when you activate and about once a week after.</li>
+    <li><b>Update checks</b> fetch a list of versions from GitHub.</li>
+  </ul>
+  <p>Nothing else. Tool call content never leaves your machine.</p>
+  <h2>This website</h2>
+  <p>The free audit runs in your browser. The config you paste is never uploaded. The site sets no cookies and loads nothing from other domains.</p>
+  <h2 id="refunds">Refunds</h2>
+  <p>If Headroom is not for you, ask for a refund within 14 days of buying and you get your money back. Reply to your receipt email or contact Lemon Squeezy support.</p>
+  <p class="muted">Headroom is made by Kugen Segaran. Not affiliated with Anthropic or the MCP project.</p>
+</main>
+</body>
+</html>
