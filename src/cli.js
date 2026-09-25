@@ -9,6 +9,7 @@ import { startServer } from './server.js';
 import { dataDir } from './paths.js';
 import { pruneEvents } from './store.js';
 import { runDoctor } from './doctor.js';
+import { ensureTrialStarted } from './license.js';
 
 const HELP = `headroom: see what your MCP servers cost you and what they're doing.
 
@@ -76,6 +77,7 @@ function prune() {
 }
 
 async function main() {
+  if (['serve', 'install', 'audit'].includes(cmd)) ensureTrialStarted();
   switch (cmd) {
     case 'proxy': {
       const sep = argv.indexOf('--');

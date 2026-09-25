@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { lineReader, tryParse } from './lines.js';
 import { appendEvent, getAllowlist, getSettings, saveCatalog } from './store.js';
 import { isWriteTool, serverTokens } from './tokens.js';
+import { isLicensed } from './license.js';
 
 /**
  * The part of the proxy that does not care how the server is reached.
@@ -21,7 +22,7 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
   };
 
   const log = event => {
-    if (getSettings().paused) return;
+    if (getSettings().paused || !isLicensed()) return;
     try {
       appendEvent({ server: name, client: clientName, ...event });
     } catch (err) {

@@ -495,3 +495,43 @@ test('clients API lists each config and how its servers connect; client names ar
   assert.equal(clients.find(c => c.id === 'vscode').found, false);
   server.close();
 });
+
+test('licence: 14-day trial, 30-day offline grace, and what stops when unlicensed', async () => {
+  const { licenseState, writeLicense, readLicense } = await import('../src/license.js');
+  const { applyTrim } = await import('../src/trim.js');
+  const day = 86400000;
+  const saved = readLicense();
+  const t0 = Date.now();
+  writeLicense({ trialStart: t0, status: 'none' });
+  assert.equal(licenseState(t0 + 3 * day).mode, 'trial');
+  assert.equal(licenseState(t0 + 3 * day).daysLeft, 11);
+  assert.equal(licenseState(t0 + 15 * day).mode, 'expired');
+  assert.equal(licenseState(t0 + 15 * day).licensed, false);
+
+  writeLicense({ status: 'active', validatedAt: t0 + 20 * day, updatesUntil: t0 + 365 * day });
+  assert.equal(licenseState(t0 + 40 * day).mode, 'licensed', 'offline within grace');
+  assert.equal(licenseState(t0 + 51 * day).mode, 'recheck', 'grace used up');
+  assert.equal(licenseState(t0 + 51 * day).licensed, false);
+
+  // Expired trial: proxy passes traffic but logs nothing; trim refuses; audit and summary still work.
+  writeLicense({ trialStart: t0 - 20 * day, status: 'none', validatedAt: null });
+  const before = readEvents().length;
+  const s = drive(process.execPath, [CLI, 'proxy', '--name', 'unlicensed', '--', process.execPath, FAKE]);
+  await s.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'x' } });
+  const call = await s.req('tools/call', { name: 'search', arguments: {} });
+  assert.equal(call.result.content[0].text, 'ran search');
+  await s.close();
+  assert.equal(readEvents().length, before);
+  assert.throws(() => applyTrim({ days: 7 }), /trial has ended/);
+  assert.equal(buildSummary().license.mode, 'expired');
+
+  const server = await startServer({ port: 0 });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const post = body => fetch(`${base}/api/license`, { method: 'POST', headers: { 'x-headroom': '1', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal((await post({ status: 'hacked' })).status, 400);
+  const st = await (await post({ status: 'active', validatedAt: Date.now(), updatesUntil: Date.now() + 365 * day, email: 'a@b.c' })).json();
+  assert.equal(st.mode, 'licensed');
+  assert.equal((await (await fetch(`${base}/api/license`)).json()).email, 'a@b.c');
+  server.close();
+  fs.writeFileSync(path.join(process.env.HEADROOM_HOME, 'license.json'), JSON.stringify(saved));
+});

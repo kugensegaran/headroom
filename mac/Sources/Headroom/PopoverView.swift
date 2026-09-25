@@ -151,6 +151,7 @@ struct PopoverView: View {
             Divider().padding(.vertical, 4).padding(.horizontal, 8)
             MenuRow(title: "Settings…", shortcut: "⌘,") { AppWindows.shared.showSettings() }
                 .keyboardShortcut(",")
+            MenuRow(title: "Licence…") { AppWindows.shared.showLicense() }
             MenuRow(title: "About Headroom") { AppWindows.shared.showAbout() }
             MenuRow(title: "Quit Headroom", shortcut: "⌘Q") {
                 engine.stop()

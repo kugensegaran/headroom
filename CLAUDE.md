@@ -6,6 +6,12 @@
   `claude mcp add --scope user filesystem -- npx -y @modelcontextprotocol/server-filesystem ~/Documents`
   and/or add the same entry to Claude Desktop (Settings, Developer, Edit config). Then tell Claude "servers added". Claude runs `headroom install`; you restart Claude Desktop and Claude Code, use a tool or two, and run `/context` in Claude Code so the token numbers can be compared.
 
+- **M5 Lemon Squeezy store and product.** Licensing is built and tested against a fake server; it only needs your ids.
+  1. At app.lemonsqueezy.com create the store (Settings, Stores) and note its numeric **store id**.
+  2. Create a product "Headroom" with one variant, single payment, price of your choice. Under the variant turn on **Generate license keys**, activation limit as you like (2 or 3 Macs is common), license length **Unlimited** (updates are limited to 12 months by the app, not by the key).
+  3. Note the numeric **product id** (and variant id), and the product's checkout URL.
+  4. Tell Claude those three values. They are public ids, not secrets. Never paste an API key into chat; the licence API does not need one.
+
 A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. One-time purchase, local only. Owner: Kugen Segaran.
 
 ## How it fits together
@@ -88,9 +94,9 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [x] Popover and dashboard checked against the Figma frames in light and dark mode. (Figma has light frames only; dark checked for contrast. Added the Clients and Settings dashboard views from the Figma sidebar, friendly client names, failing servers under Needs attention.)
 
 ### M5 Licensing (one-time purchase, 12 months of updates)
-- [ ] STOP: Kugen creates the Lemon Squeezy store and product, and gives the store id and product/variant ids (not API secrets in chat).
-- [ ] Licence window: activate, deactivate, show updates-until date. Lemon Squeezy License API (activate/validate), key in Keychain, 14-day full trial, offline grace of 30 days.
-- [ ] Unlicensed after trial: audit and dashboard still work; proxy logging, trim and notifications need a licence.
+- [ ] WAITING STOP: Kugen creates the Lemon Squeezy store and product, and gives the store id and product/variant ids (not API secrets in chat). Then set `LicenseConfig.storeID`/`productID` in mac/Sources/Headroom/License.swift and add a Buy button with the checkout URL to LicenseView.
+- [x] Licence window: activate, deactivate, show updates-until date. Lemon Squeezy License API (activate/validate), key in Keychain, 14-day full trial, offline grace of 30 days.
+- [x] Unlicensed after trial: audit and dashboard still work; proxy logging, trim and notifications need a licence.
 
 ### M6 Updates
 - [ ] Sparkle 2 via SwiftPM. STOP: Kugen runs Sparkle's `generate_keys` so the private key stays in his Keychain; public key goes in Info.plist.

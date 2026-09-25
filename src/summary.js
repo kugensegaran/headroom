@@ -1,6 +1,7 @@
 import { getAllowlist, getSettings, readCatalogs, readEvents } from './store.js';
 import { isWriteTool, toolTokens } from './tokens.js';
 import { clientLabel } from './clients.js';
+import { licenseState } from './license.js';
 
 /**
  * One view of the world for the CLI, the dashboard and the menu bar app:
@@ -88,6 +89,7 @@ export function buildSummary({ days = 7 } = {}) {
     notifyFailures: settings.notifyFailures,
     retentionDays: settings.retentionDays,
     failing,
+    license: licenseState(),
     paused: settings.paused,
     contextWindow: settings.contextWindow,
     budgetPct: settings.budgetPct,

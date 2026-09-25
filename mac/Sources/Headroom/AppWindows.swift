@@ -34,6 +34,10 @@ final class AppWindows {
         show("settings", title: "Headroom Settings") { SettingsView() }
     }
 
+    func showLicense() {
+        show("licence", title: "Headroom Licence") { LicenseView() }
+    }
+
     func showAbout() {
         NSApp.activate(ignoringOtherApps: true)
         NSApp.orderFrontStandardAboutPanel(options: [.credits: NSAttributedString(string: "")])

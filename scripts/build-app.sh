@@ -36,6 +36,7 @@ if [[ "$(xcode-select -p)" != *Xcode*.app* ]]; then
   echo "Full Xcode is required. Run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer" >&2
   exit 1
 fi
+swift test --quiet
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/Headroom"
 

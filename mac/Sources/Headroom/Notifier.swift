@@ -20,6 +20,7 @@ final class Notifier {
     }
 
     func check(_ s: Summary) {
+        guard s.license.licensed else { return }
         let over = s.overBudget && s.totalTokens > 0
         if s.notifyOverBudget, over, wasOverBudget == false {
             post(id: "budget", title: "Over your context budget",

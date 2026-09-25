@@ -1,5 +1,6 @@
 import { getAllowlist, readEvents, setAllowlist } from './store.js';
 import { buildSummary } from './summary.js';
+import { NEEDS_LICENCE, licenseState } from './license.js';
 
 /**
  * Build an allow-list from real usage: keep the tools each server was actually
@@ -29,6 +30,7 @@ export function planTrim({ days = 7, includeIdle = false, keep = {} } = {}) {
 }
 
 export function applyTrim(opts) {
+  if (!licenseState().licensed) throw new Error(NEEDS_LICENCE);
   const plan = planTrim(opts);
   setAllowlist(plan.next);
   return plan;

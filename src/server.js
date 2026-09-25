@@ -5,6 +5,7 @@ import { buildSummary } from './summary.js';
 import { applyTrim, planTrim, resetTrim } from './trim.js';
 import { runAudit } from './audit.js';
 import { clientsReport } from './install.js';
+import { ensureTrialStarted, licenseState, writeLicense } from './license.js';
 
 const DASHBOARD = new URL('./dashboard.html', import.meta.url);
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -64,6 +65,7 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
   });
 
   pruneEvents();
+  ensureTrialStarted();
   const pruneTimer = setInterval(() => pruneEvents(), 6 * 3600000);
   pruneTimer.unref();
 
@@ -118,6 +120,16 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
       if (req.method === 'POST' && url.pathname === '/api/pause') {
         const body = await readBody(req);
         return send(res, 200, setSettings({ paused: !!body.paused }));
+      }
+      if (req.method === 'GET' && url.pathname === '/api/license') {
+        return send(res, 200, licenseState());
+      }
+      if (req.method === 'POST' && url.pathname === '/api/license') {
+        const body = await readBody(req);
+        if (!['active', 'none'].includes(body.status)) return send(res, 400, { error: 'status must be active or none' });
+        const num = v => (Number.isFinite(v) ? v : null);
+        writeLicense({ status: body.status, validatedAt: num(body.validatedAt), updatesUntil: num(body.updatesUntil), email: typeof body.email === 'string' ? body.email : null });
+        return send(res, 200, licenseState());
       }
       if (req.method === 'GET' && url.pathname === '/api/clients') {
         return send(res, 200, clientsReport());
