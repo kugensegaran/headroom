@@ -29,11 +29,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Menu bar only: no Dock icon (LSUIElement is also set in Info.plist).
         NSApp.setActivationPolicy(.accessory)
         Engine.shared.start()
-        // `-show settings|onboarding|about` opens a window at launch (handy for QA screenshots).
+        switch UserDefaults.standard.string(forKey: "appearance") {
+        case "light": NSApp.appearance = NSAppearance(named: .aqua)
+        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
+        default: break
+        }
+        // `-show settings|onboarding|about|popover` opens a window at launch (handy for QA screenshots).
         switch UserDefaults.standard.string(forKey: "show") {
         case "settings": AppWindows.shared.showSettings()
         case "about": AppWindows.shared.showAbout()
         case "onboarding": AppWindows.shared.showOnboarding()
+        case "popover": AppWindows.shared.show("popover", title: "Headroom") { PopoverView() }
         default:
             if !UserDefaults.standard.bool(forKey: "onboarded") { AppWindows.shared.showOnboarding() }
         }

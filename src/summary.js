@@ -1,5 +1,6 @@
 import { getAllowlist, getSettings, readCatalogs, readEvents } from './store.js';
 import { isWriteTool, toolTokens } from './tokens.js';
+import { clientLabel } from './clients.js';
 
 /**
  * One view of the world for the CLI, the dashboard and the menu bar app:
@@ -95,7 +96,7 @@ export function buildSummary({ days = 7 } = {}) {
     unusedTools: servers.filter(x => !x.idle).reduce((s, x) => s + (x.enabledCount - x.usedCount), 0),
     idleServers: servers.filter(x => x.idle).map(x => x.name),
     trimmableTokens: servers.reduce((s, x) => s + x.trimmable, 0),
-    clients: [...new Set(todayEvents.map(e => e.client))],
+    clients: [...new Set(todayEvents.map(e => clientLabel(e.client)))],
     today: {
       calls: calls.length,
       failedPct: calls.length ? failed / calls.length : 0,

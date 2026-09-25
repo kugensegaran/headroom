@@ -4,6 +4,7 @@ import { eventFile, getSettings, pruneEvents, readEvents, setSettings } from './
 import { buildSummary } from './summary.js';
 import { applyTrim, planTrim, resetTrim } from './trim.js';
 import { runAudit } from './audit.js';
+import { clientsReport } from './install.js';
 
 const DASHBOARD = new URL('./dashboard.html', import.meta.url);
 const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
@@ -117,6 +118,9 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
       if (req.method === 'POST' && url.pathname === '/api/pause') {
         const body = await readBody(req);
         return send(res, 200, setSettings({ paused: !!body.paused }));
+      }
+      if (req.method === 'GET' && url.pathname === '/api/clients') {
+        return send(res, 200, clientsReport());
       }
       if (req.method === 'GET' && url.pathname === '/api/settings') {
         return send(res, 200, getSettings());

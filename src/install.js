@@ -106,3 +106,31 @@ export function applyInstall({ undo = false, dryRun = false } = {}) {
   }
   return report;
 }
+
+/** Every client config and how each server in it is connected, for the dashboard's Clients view. */
+export function clientsReport() {
+  const status = getAuditStatus();
+  const out = [];
+  for (const client of knownClients()) {
+    const cfg = readClientConfig(client);
+    const row = { id: client.id, label: client.label, file: client.file, found: !!cfg, error: cfg?.__error || null, servers: [] };
+    if (cfg && !cfg.__error) {
+      for (const block of serverBlocks(client, cfg)) {
+        const servers = getAt(cfg, block.path);
+        if (!servers || typeof servers !== 'object') continue;
+        for (const [name, entry] of Object.entries(servers)) {
+          if (!entry || typeof entry !== 'object') continue;
+          const original = unwrap(entry);
+          row.servers.push({ name, scope: block.scope, transport: transportOf(original), proxied: isWrapped(entry), reason: isWrapped(entry) ? null : wrapBlocker(entry, status[name]) });
+        }
+      }
+    }
+    out.push(row);
+  }
+  for (const src of readOnlySources()) {
+    const names = src.servers && typeof src.servers === 'object' ? Object.keys(src.servers) : [];
+    if (!names.length) continue;
+    out.push({ id: src.client, label: `${src.label} (${src.scope})`, file: src.file, found: true, error: null, servers: names.map(name => ({ name, scope: src.scope, transport: transportOf(src.servers[name] || {}), proxied: false, reason: src.reason })) });
+  }
+  return out;
+}

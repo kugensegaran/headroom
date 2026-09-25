@@ -29,4 +29,4 @@ Run on a clean macOS user account with the notarized DMG. Tick each line; anythi
 - [ ] `headroom doctor` reports no errors after install.
 
 ## Launch helpers
-Open a window directly for screenshots: `open Headroom.app --args -show settings` (or `onboarding`, `about`).
+Open a window directly for screenshots: `open Headroom.app --args -show settings` (or `onboarding`, `about`, `popover`). Add `-appearance light` or `-appearance dark` to force a mode. `scripts/demo-data.js` fills a scratch data folder with the Figma demo numbers.

@@ -126,3 +126,12 @@ export function transportOf(entry) {
   if (entry.url || entry.type === 'http' || entry.type === 'sse') return 'http';
   return 'unknown';
 }
+
+/** Friendly name for the clientInfo.name a client sends in initialize. */
+export function clientLabel(name = '') {
+  if (name === 'claude-ai') return 'Claude';
+  if (name === 'claude-code') return 'Claude Code';
+  if (/cursor/i.test(name)) return 'Cursor';
+  if (/visual studio code|vscode/i.test(name)) return 'VS Code';
+  return name || 'unknown';
+}
