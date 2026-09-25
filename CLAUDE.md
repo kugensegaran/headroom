@@ -47,15 +47,15 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 
 ## Status
 
-- 2026-09-25: engine done and tested against real servers (filesystem, memory, playwright). Swift app builds and runs on this Mac (SDK fallback in build-app.sh until full Xcode is selected). Renamed from MCP Meter to Headroom.
+- 2026-09-25: engine done and tested against real servers (filesystem, memory, playwright). Swift app builds and runs on this Mac (full Xcode selected, no SDK fallback). Renamed from MCP Meter to Headroom.
 
 ## Roadmap to v1.0 (development complete)
 
 Work top to bottom. Tick each box in this file when it is done, tested and committed. Items marked STOP need Kugen: explain exactly what he must do, then move on to the next item that does not depend on it.
 
 ### M1 Build hygiene
-- [ ] Full Xcode selected (`xcode-select -p` points into Xcode.app). STOP if not: ask Kugen to run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
-- [ ] Remove the SDK fallback from scripts/build-app.sh; `swift build` clean with zero warnings.
+- [x] Full Xcode selected (`xcode-select -p` points into Xcode.app). STOP if not: ask Kugen to run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`.
+- [x] Remove the SDK fallback from scripts/build-app.sh; `swift build` clean with zero warnings.
 - [x] `git config core.hooksPath .githooks` runs from build-app.sh so fresh clones keep the authorship hook.
 
 ### M2 Real-world check on this Mac

@@ -32,21 +32,9 @@ npm test
 
 echo "==> Swift: building menu bar app"
 cd "$ROOT/mac"
-# Command Line Tools ship without the SwiftUIMacros plugin that macOS 26+ SDKs
-# require for @State, @Binding, etc. If the plugin is missing, build against
-# the newest SDK that still exposes those as property wrappers.
-if ! find "$(xcode-select -p)" -name "libSwiftUIMacros*.dylib" -print -quit 2>/dev/null | grep -q .; then
-  fallback=""
-  for candidate in MacOSX26.sdk MacOSX15.sdk MacOSX14.sdk; do
-    if [[ -d "$(xcode-select -p)/SDKs/$candidate" ]]; then
-      fallback="$(xcode-select -p)/SDKs/$candidate"
-      break
-    fi
-  done
-  if [[ -n "$fallback" ]]; then
-    echo "    SwiftUIMacros plugin not found, pinning SDKROOT=$fallback"
-    export SDKROOT="$fallback"
-  fi
+if [[ "$(xcode-select -p)" != *Xcode*.app* ]]; then
+  echo "Full Xcode is required. Run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer" >&2
+  exit 1
 fi
 swift build -c release
 BIN="$(swift build -c release --show-bin-path)/Headroom"
