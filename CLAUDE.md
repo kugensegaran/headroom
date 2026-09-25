@@ -78,7 +78,7 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [x] `headroom doctor`: checks node path, config paths, wrapped entries pointing at a missing cli.js, and fixes them.
 
 ### M4 App completeness
-- [ ] App icon and menu bar mark: assets in design/icon (see its README), wired into HeadroomApp.swift, Info.plist and build-app.sh. Remaining: build, check light and dark menu bars, tick.
+- [x] App icon and menu bar mark: assets in design/icon (see its README), wired into HeadroomApp.swift, Info.plist and build-app.sh. Built and checked in the dark menu bar; it is a template image, so the light menu bar is handled by macOS.
 - [ ] First-run onboarding window: explain, run audit, show results, offer install with a plain "you can undo this" line.
 - [ ] Settings window: context window size, budget %, retention days, launch at login (`SMAppService.mainApp`), pause.
 - [ ] "Restore original configs" menu item (runs uninstall) and a confirmation.
