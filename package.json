@@ -1,0 +1,12 @@
+{
+  "name": "mcpmeter",
+  "version": "0.1.0",
+  "description": "See what your MCP servers cost you and what they're doing, live. Local proxy, token audit and dashboard.",
+  "type": "module",
+  "bin": { "mcpmeter": "src/cli.js" },
+  "files": ["src"],
+  "engines": { "node": ">=20" },
+  "scripts": { "test": "node --test test/*.test.js" },
+  "license": "UNLICENSED",
+  "dependencies": { "js-tiktoken": "^1.0.21" }
+}

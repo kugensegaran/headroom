@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MCP Meter</title>
+<style>
+:root {
+  --bg: #FFFFFF; --side: #ECECEE; --panel: #FAFAFA; --alt: #F5F5F7;
+  --text: #1d1d1f; --text2: rgba(0,0,0,.5); --text3: rgba(0,0,0,.45);
+  --line: rgba(0,0,0,.1); --line2: rgba(0,0,0,.08); --fill: rgba(0,0,0,.06); --sel: rgba(0,0,0,.08);
+  --blue: #007AFF; --blue-soft: rgba(0,122,255,.28); --green: #34C759; --orange: #FF9500; --red: #FF3B30;
+  --c1: #007AFF; --c2: #AF52DE; --c3: #FF9500; --c4: #30B0C7; --c5: #34C759; --c6: #8E8E93;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1E1E1E; --side: #2A2A2C; --panel: #232325; --alt: #262628;
+    --text: #F5F5F7; --text2: rgba(255,255,255,.55); --text3: rgba(255,255,255,.45);
+    --line: rgba(255,255,255,.12); --line2: rgba(255,255,255,.08); --fill: rgba(255,255,255,.08); --sel: rgba(255,255,255,.1);
+    --blue: #0A84FF; --blue-soft: rgba(10,132,255,.35); --green: #30D158; --orange: #FF9F0A; --red: #FF453A;
+    --c1: #0A84FF; --c2: #BF5AF2; --c3: #FF9F0A; --c4: #40C8E0; --c5: #30D158; --c6: #98989D;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 13px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", system-ui, sans-serif; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+button { font: inherit; color: inherit; cursor: default; }
+.app { display: flex; height: 100vh; min-width: 900px; }
+nav { width: 220px; flex-shrink: 0; background: var(--side); border-right: .5px solid var(--line); padding: 20px 10px; display: flex; flex-direction: column; gap: 2px; }
+nav .sect { font-size: 11px; font-weight: 600; color: var(--text3); padding: 0 10px 4px; }
+nav .sect + .sect, nav .gap { margin-top: 14px; }
+nav button { display: flex; align-items: center; gap: 8px; height: 28px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; text-align: left; font-size: 13px; }
+nav button[aria-current="page"] { background: var(--sel); font-weight: 500; }
+nav svg { width: 16px; height: 16px; stroke: var(--blue); fill: none; stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+nav .foot { margin-top: auto; padding: 10px; font-size: 11px; color: var(--text3); }
+main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.toolbar { height: 52px; flex-shrink: 0; display: flex; align-items: center; gap: 16px; padding: 0 20px; border-bottom: .5px solid var(--line); }
+.toolbar .title { flex: 1; display: flex; flex-direction: column; }
+.toolbar h1 { margin: 0; font-size: 15px; font-weight: 600; }
+.sub { font-size: 11px; color: var(--text2); }
+.seg { display: flex; padding: 2px; border-radius: 7px; background: var(--fill); }
+.seg button { height: 22px; padding: 0 12px; border: 0; border-radius: 5px; background: transparent; font-size: 12px; }
+.seg button[aria-pressed="true"] { background: var(--bg); box-shadow: 0 .5px 1.5px rgba(0,0,0,.2); font-weight: 500; }
+.search { width: 200px; height: 28px; display: flex; align-items: center; gap: 6px; padding: 0 8px; border-radius: 7px; background: var(--fill); }
+.search input { border: 0; outline: 0; background: transparent; width: 100%; font: inherit; color: var(--text); }
+.search svg { width: 13px; height: 13px; stroke: var(--text3); fill: none; stroke-width: 1.6; flex-shrink: 0; }
+.view { display: none; flex: 1; min-height: 0; flex-direction: column; }
+.view.on { display: flex; }
+.stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 20px 20px 18px; border-bottom: .5px solid var(--line2); }
+.stat { display: flex; flex-direction: column; gap: 3px; padding: 0 20px; border-left: .5px solid var(--line); }
+.stat:first-child { padding-left: 0; border-left: 0; }
+.stat .v { font-size: 24px; font-weight: 600; letter-spacing: -.01em; }
+.budget { padding: 16px 20px; display: flex; flex-direction: column; gap: 10px; border-bottom: .5px solid var(--line2); }
+.row-between { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.bar { display: flex; gap: 1.5px; height: 14px; border-radius: 4px; overflow: hidden; background: var(--fill); position: relative; }
+.bar .budget-mark { position: absolute; top: 0; bottom: 0; width: 1.5px; background: var(--text2); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 4px; display: inline-block; flex-shrink: 0; }
+.split { display: flex; flex: 1; min-height: 0; }
+.table { flex: 1; min-width: 0; overflow: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { position: sticky; top: 0; background: var(--bg); height: 26px; text-align: left; font-size: 11px; font-weight: 600; color: var(--text2); border-bottom: .5px solid var(--line); padding: 0 8px; white-space: nowrap; }
+td { height: 24px; padding: 0 8px; white-space: nowrap; }
+th:first-child, td:first-child { padding-left: 20px; }
+tbody tr:nth-child(even) { background: var(--alt); }
+td.num, th.num { text-align: right; }
+td.muted { color: var(--text2); }
+td.mono { font: 11.5px ui-monospace, "SF Mono", Menlo, monospace; max-width: 320px; overflow: hidden; text-overflow: ellipsis; }
+tr.new { animation: flash 1.2s ease-out; }
+@keyframes flash { from { background: rgba(0,122,255,.14); } }
+.status { display: inline-flex; align-items: center; gap: 6px; }
+.status .dot { width: 7px; height: 7px; }
+aside { width: 290px; flex-shrink: 0; border-left: .5px solid var(--line); background: var(--panel); padding: 16px 18px; display: flex; flex-direction: column; gap: 22px; overflow: auto; }
+h2 { margin: 0; font-size: 13px; font-weight: 600; }
+.hours { display: flex; align-items: flex-end; gap: 3px; height: 84px; margin-top: 10px; }
+.hours div { flex: 1; border-radius: 2px; background: var(--blue-soft); min-height: 2px; }
+.hours div.now { background: var(--blue); }
+.issue { display: flex; gap: 10px; padding: 8px 0; border-top: .5px solid var(--line2); }
+.issue .dot { margin-top: 4px; }
+.issue b { display: block; font-size: 12px; font-weight: 500; }
+.issue span { font-size: 11px; color: var(--text2); }
+.btn { height: 28px; padding: 0 12px; border-radius: 7px; border: 0; background: var(--blue); color: #fff; font-size: 13px; font-weight: 500; }
+.btn.plain { background: var(--bg); color: var(--text); border: .5px solid var(--line); box-shadow: 0 .5px 1px rgba(0,0,0,.12); }
+.btn:disabled { opacity: .45; }
+.empty { padding: 48px 20px; color: var(--text2); text-align: center; }
+.empty code { font: 12px ui-monospace, "SF Mono", Menlo, monospace; background: var(--fill); padding: 2px 6px; border-radius: 4px; }
+.pad { padding: 20px; overflow: auto; }
+.server { border-bottom: .5px solid var(--line2); padding: 14px 0; }
+.server summary { display: flex; align-items: center; gap: 10px; list-style: none; cursor: default; }
+.server summary::-webkit-details-marker { display: none; }
+.server summary .name { font-weight: 600; flex: 1; }
+.server table { margin-top: 10px; }
+.pill { font-size: 11px; padding: 1px 7px; border-radius: 9px; background: var(--fill); color: var(--text2); }
+.pill.warn { color: var(--orange); }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav aria-label="Sections">
+    <div class="sect">Monitor</div>
+    <button data-view="overview" aria-current="page"><svg viewBox="0 0 16 16"><path d="M2.5 2.5h4.5v4.5h-4.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5h-4.5zM9 9h4.5v4.5H9z"/></svg>Overview</button>
+    <button data-view="traffic"><svg viewBox="0 0 16 16"><path d="M1.5 8h3l2-5 3 10 2-5h3"/></svg>Live Traffic</button>
+    <button data-view="servers"><svg viewBox="0 0 16 16"><path d="M2.5 3h11v4h-11zM2.5 9h11v4h-11z"/></svg>Servers</button>
+    <div class="sect gap">Configure</div>
+    <button data-view="fixes"><svg viewBox="0 0 16 16"><path d="M3 13l6.5-6.5M9 3.5a3 3 0 0 0 3.5 3.5L13 6l-3-3z"/></svg>Fixes</button>
+    <div class="foot" id="foot">Local only. Nothing leaves this Mac.</div>
+  </nav>
+  <main>
+    <div class="toolbar">
+      <div class="title"><h1 id="title">Overview</h1><span class="sub" id="subtitle">Loading…</span></div>
+      <div class="seg" role="group" aria-label="Time range">
+        <button aria-pressed="true" data-range="live">Live</button>
+        <button aria-pressed="false" data-range="24">24h</button>
+        <button aria-pressed="false" data-range="168">7 days</button>
+      </div>
+      <label class="search"><svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg><input id="q" placeholder="Search tools" aria-label="Search tools"></label>
+    </div>
+
+    <section class="view on" id="view-overview">
+      <div class="stats">
+        <div class="stat"><span class="sub">Tool calls today</span><span class="v" id="s-calls">0</span><span class="sub" id="s-calls-sub"></span></div>
+        <div class="stat"><span class="sub">Failed</span><span class="v" id="s-failed">0%</span><span class="sub" id="s-failed-sub"></span></div>
+        <div class="stat"><span class="sub">Median latency</span><span class="v" id="s-lat">–</span><span class="sub" id="s-lat-sub"></span></div>
+        <div class="stat"><span class="sub">Context per turn</span><span class="v" id="s-ctx">0</span><span class="sub" id="s-ctx-sub"></span></div>
+      </div>
+      <div class="budget">
+        <div class="row-between"><h2>Context budget</h2><span class="sub" id="budget-text"></span></div>
+        <div class="bar" id="bar"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+      <div class="split">
+        <div class="table" id="table-overview"></div>
+        <aside>
+          <div><h2>Calls per hour</h2><div class="hours" id="hours"></div><div class="row-between sub" style="margin-top:6px"><span>00:00</span><span>now</span></div></div>
+          <div><h2 style="padding-bottom:6px">Needs attention</h2><div id="issues"></div>
+            <div style="display:flex; gap:8px; margin-top:10px"><button class="btn" id="go-fixes" style="flex:1">Review fixes</button><button class="btn plain" id="pause">Pause</button></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="view" id="view-traffic"><div class="table" id="table-traffic"></div></section>
+    <section class="view" id="view-servers"><div class="pad" id="servers"></div></section>
+    <section class="view" id="view-fixes"><div class="pad" id="fixes"></div></section>
+  </main>
+</div>
+
+<script>
+const COLORS = ['--c1', '--c2', '--c3', '--c4', '--c5', '--c6'].map(v => `var(${v})`);
+const STATUS = { ok: ['OK', 'var(--green)'], error: ['Failed', 'var(--red)'], blocked: ['Blocked', 'var(--text3)'], slow: ['Slow', 'var(--orange)'], write: ['Write', 'var(--blue)'] };
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const k = n => n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : String(n);
+const fmtMs = ms => ms == null ? '–' : ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : ms + ' ms';
+const fmtBytes = b => b >= 1024 ? (b / 1024).toFixed(1) + ' KB' : b + ' B';
+const time = ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+const api = (path, body) => fetch(path, body ? { method: 'POST', headers: { 'x-mcpmeter': '1', 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(r => r.json());
+
+let summary = null, events = [], range = 'live', query = '', freshIds = new Set();
+const colorOf = {};
+
+function statusOf(e) {
+  if (e.status !== 'ok') return e.status;
+  if (e.write) return 'write';
+  if (e.ms > 800) return 'slow';
+  return 'ok';
+}
+
+function renderTable(el) {
+  const rows = events.filter(e => e.method === 'tools/call').filter(e => !query || (e.tool || '').toLowerCase().includes(query) || e.server.toLowerCase().includes(query));
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty">${summary && summary.hasUsageData ? 'No calls match.' : 'No tool calls yet. Run <code>mcpmeter install</code>, restart your MCP clients and use a tool.'}</div>`;
+    return;
+  }
+  el.innerHTML = `<table><thead><tr><th>Time</th><th>Client</th><th>Server</th><th>Tool</th><th class="num">Latency</th><th class="num">Size</th><th>Status</th></tr></thead><tbody>${rows.slice(0, 500).map(e => {
+    const [label, color] = STATUS[statusOf(e)];
+    return `<tr class="${freshIds.has(e.ts + e.tool) ? 'new' : ''}"><td class="muted">${time(e.ts)}</td><td>${esc(e.client)}</td><td>${esc(e.server)}</td><td class="mono">${esc(e.tool)}</td><td class="num">${fmtMs(e.ms)}</td><td class="num muted">${fmtBytes(e.resBytes || 0)}</td><td><span class="status"><span class="dot" style="background:${color}"></span>${label}</span></td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+function renderSummary() {
+  const s = summary;
+  s.servers.forEach((x, i) => (colorOf[x.name] = COLORS[i % COLORS.length]));
+  $('subtitle').textContent = `${s.clients.length || 0} client${s.clients.length === 1 ? '' : 's'} · ${s.servers.length} servers · ${s.paused ? 'paused' : 'proxy running'}`;
+  $('s-calls').textContent = s.today.calls.toLocaleString();
+  $('s-calls-sub').textContent = s.clients.join(', ') || 'no clients yet';
+  $('s-failed').textContent = (s.today.failedPct * 100).toFixed(1) + '%';
+  $('s-failed-sub').textContent = s.today.failed + ' failed today';
+  $('s-lat').textContent = fmtMs(s.today.medianMs);
+  $('s-lat-sub').textContent = s.today.slowestServer ? 'Slowest: ' + s.today.slowestServer : '';
+  $('s-ctx').textContent = k(s.totalTokens);
+  $('s-ctx-sub').textContent = Math.round(s.pctOfWindow * 100) + '% of ' + k(s.contextWindow);
+  $('budget-text').textContent = `${s.totalTokens.toLocaleString()} of ${s.contextWindow.toLocaleString()} tokens per turn · budget ${s.budgetPct}%`;
+  $('bar').innerHTML = s.servers.map(x => `<div title="${esc(x.name)}: ${x.tokens.toLocaleString()} tokens" style="width:${(x.tokens / s.contextWindow * 100).toFixed(3)}%; background:${colorOf[x.name]}"></div>`).join('') + `<div class="budget-mark" style="left:${s.budgetPct}%"></div>`;
+  $('legend').innerHTML = s.servers.map(x => `<span><span class="dot" style="background:${colorOf[x.name]}"></span>${esc(x.name)} <span class="sub">${k(x.tokens)}</span></span>`).join('') || '<span class="sub">Run <code>mcpmeter audit</code> to measure your servers.</span>';
+  const nowH = new Date().getHours();
+  const max = Math.max(1, ...s.today.perHour);
+  $('hours').innerHTML = s.today.perHour.slice(0, nowH + 1).map((v, i) => `<div class="${i === nowH ? 'now' : ''}" style="height:${(v / max) * 100}%" title="${i}:00 · ${v} calls"></div>`).join('');
+  const issues = [];
+  const failing = {};
+  for (const e of events) if (e.status === 'error' && e.method === 'tools/call') failing[e.server] = (failing[e.server] || 0) + 1;
+  for (const [srv, n] of Object.entries(failing)) issues.push(['var(--red)', `${srv}: ${n} failed call${n === 1 ? '' : 's'}`, 'Open Live Traffic to see which tools failed.']);
+  if (s.hasUsageData && s.unusedTools) issues.push(['var(--orange)', `${s.unusedTools} tools never called`, `Trim them to save about ${k(s.trimmableTokens)} tokens per turn.`]);
+  for (const c of s.clashes.slice(0, 3)) issues.push(['var(--orange)', `${c.tool} appears ${c.servers.length} times`, `${c.servers.join(', ')} all expose a tool named ${c.tool}.`]);
+  if (s.pctOfWindow * 100 > s.budgetPct) issues.push(['var(--orange)', 'Over your context budget', `${Math.round(s.pctOfWindow * 100)}% of the window goes to tool definitions.`]);
+  $('issues').innerHTML = issues.map(([c, t, b]) => `<div class="issue"><span class="dot" style="background:${c}"></span><div><b>${esc(t)}</b><span>${esc(b)}</span></div></div>`).join('') || '<div class="sub">Nothing needs attention.</div>';
+  $('pause').textContent = s.paused ? 'Resume' : 'Pause';
+  renderServers();
+}
+
+function renderServers() {
+  const s = summary;
+  $('servers').innerHTML = s.servers.map(x => `<details class="server"><summary><span class="dot" style="background:${colorOf[x.name]}"></span><span class="name">${esc(x.name)}</span>${x.allowlisted ? '<span class="pill">trimmed</span>' : ''}<span class="sub">${x.enabledCount}/${x.toolCount} tools on · ${x.usedCount} used · ${x.tokens.toLocaleString()} tokens</span>${x.allowlisted ? `<button class="btn plain" data-reset="${esc(x.name)}">Turn all on</button>` : ''}</summary>
+    <table><thead><tr><th>Tool</th><th class="num">Tokens</th><th>Used (7d)</th><th>State</th></tr></thead><tbody>${x.tools.slice().sort((a, b) => b.tokens - a.tokens).map(t => `<tr><td class="mono">${esc(t.name)}${t.write ? ' <span class="pill warn">write</span>' : ''}</td><td class="num">${t.tokens}</td><td>${t.used ? 'Yes' : '<span class="sub">No</span>'}</td><td>${t.enabled ? 'On' : '<span class="sub">Off</span>'}</td></tr>`).join('')}</tbody></table></details>`).join('') || '<div class="empty">No servers measured yet. Run <code>mcpmeter audit</code>.</div>';
+}
+
+async function renderFixes() {
+  const plan = await api('/api/trim/plan?days=7');
+  const trims = plan.changes.filter(c => c.action === 'trim' && c.savedTokens > 0);
+  $('fixes').innerHTML = `<h2>Trim unused tools</h2><p class="sub" style="margin:6px 0 14px">Keeps only the tools each server was asked to run in the last 7 days. Servers with no calls are left alone. You can turn everything back on from Servers.</p>
+    ${trims.length ? `<table><thead><tr><th>Server</th><th class="num">Keep</th><th class="num">Saves</th></tr></thead><tbody>${trims.map(c => `<tr><td>${esc(c.server)}</td><td class="num">${c.keep} of ${c.of}</td><td class="num">${k(c.savedTokens)} tokens</td></tr>`).join('')}</tbody></table>
+    <div style="margin-top:16px; display:flex; gap:12px; align-items:center"><button class="btn" id="apply-trim">Trim and save ${k(plan.savedTokens)} tokens</button><span class="sub">Restart your MCP clients afterwards.</span></div>` : `<div class="empty">${summary.hasUsageData ? 'Nothing to trim yet.' : 'Needs a few days of usage first.'}</div>`}`;
+  const btn = $('apply-trim');
+  if (btn) btn.onclick = async () => { btn.disabled = true; await api('/api/trim', { days: 7 }); await refresh(); renderFixes(); };
+}
+
+function renderTables() {
+  renderTable($('table-overview'));
+  renderTable($('table-traffic'));
+}
+
+async function loadEvents() {
+  const hours = range === 'live' ? 24 : Number(range);
+  events = await api(`/api/events?limit=${range === 'live' ? 300 : 1000}&hours=${hours}`);
+  renderTables();
+}
+
+async function refresh() {
+  summary = await api('/api/summary');
+  renderSummary();
+}
+
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button').forEach(x => x.removeAttribute('aria-current'));
+  b.setAttribute('aria-current', 'page');
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('on'));
+  $('view-' + b.dataset.view).classList.add('on');
+  $('title').textContent = b.textContent.trim();
+  if (b.dataset.view === 'fixes') renderFixes();
+});
+document.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', 'false'));
+  b.setAttribute('aria-pressed', 'true');
+  range = b.dataset.range;
+  loadEvents();
+});
+$('q').oninput = e => { query = e.target.value.trim().toLowerCase(); renderTables(); };
+$('go-fixes').onclick = () => document.querySelector('nav button[data-view="fixes"]').click();
+$('pause').onclick = async () => { await api('/api/pause', { paused: !summary.paused }); refresh(); };
+$('servers').addEventListener('click', async e => {
+  const name = e.target.dataset?.reset;
+  if (!name) return;
+  e.preventDefault();
+  await api('/api/trim/reset', { server: name });
+  refresh();
+});
+
+const stream = new EventSource('/api/stream');
+let pending = null;
+stream.addEventListener('call', msg => {
+  if (range !== 'live') return;
+  const e = JSON.parse(msg.data);
+  events.unshift(e);
+  events.length = Math.min(events.length, 1000);
+  freshIds = new Set([e.ts + e.tool]);
+  renderTables();
+  clearTimeout(pending);
+  pending = setTimeout(refresh, 400);
+});
+
+refresh().then(loadEvents);
+setInterval(refresh, 10000);
+</script>
+</body>
+</html>
