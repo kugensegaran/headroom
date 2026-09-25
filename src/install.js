@@ -28,6 +28,7 @@ function backup(client) {
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
   const dest = path.join(paths.backups(), `${client.id}-${stamp}.json`);
   fs.copyFileSync(client.file, dest);
+  fs.chmodSync(dest, 0o600); // configs often hold API keys
   return dest;
 }
 

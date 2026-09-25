@@ -8,6 +8,8 @@ import { serverTokens } from './tokens.js';
 function missingMessage(missing) {
   const inputs = missing.filter(m => m.startsWith('${input:'));
   if (inputs.length) return `needs ${inputs.join(', ')}, which only VS Code can ask for. Its tools are measured once the proxy sees them.`;
+  const files = missing.filter(m => m.startsWith('envFile '));
+  if (files.length) return `could not read ${files.map(f => f.slice(8)).join(', ')}.`;
   return `${missing.join(', ')} is not set in the environment Headroom runs in.`;
 }
 

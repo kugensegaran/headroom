@@ -253,3 +253,53 @@ test('servers in enabled Claude Code plugins are audited but not rewritten', asy
   assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '.mcp.json'), 'utf8')), mcp);
   fs.rmSync(path.join(home, '.claude'), { recursive: true });
 });
+
+test('VS Code inputs and env values are never printed or logged', async () => {
+  const vscode = knownClients().find(c => c.id === 'vscode');
+  fs.mkdirSync(path.dirname(vscode.file), { recursive: true });
+  const secret = 'sk-live-supersecret-1234';
+  const fileSecret = 'from-env-file-98765';
+  const envFile = path.join(tmp, 'vs.env');
+  fs.writeFileSync(envFile, `# comment\nexport FILE_TOKEN="${fileSecret}"\n`);
+  const leak = "console.error('token=' + process.env.TOKEN + ' file=' + process.env.FILE_TOKEN + ' Authorization: Bearer abcdefgh12345678'); process.exit(3)";
+  const servers = {
+    prompted: { type: 'stdio', command: process.execPath, args: [FAKE], env: { API_KEY: '${input:api-key}' } },
+    leaky: { type: 'stdio', command: process.execPath, args: ['-e', leak], env: { TOKEN: '${env:HR_TEST_SECRET}' }, envFile },
+    vsfake: { type: 'stdio', command: '${env:HR_TEST_NODE}', args: [FAKE] },
+  };
+  const original = { inputs: [{ type: 'promptString', id: 'api-key', password: true }], servers };
+  fs.writeFileSync(vscode.file, JSON.stringify(original));
+  process.env.HR_TEST_SECRET = secret;
+  process.env.HR_TEST_NODE = process.execPath;
+
+  const started = Date.now();
+  const results = Object.fromEntries((await runAudit({ only: ['prompted', 'leaky', 'vsfake'] })).map(r => [r.name, r]));
+  assert.ok(Date.now() - started < 10000, 'a server that exits early fails fast');
+  assert.equal(results.prompted.ok, false);
+  assert.match(results.prompted.error, /\$\{input:api-key\}.*only VS Code/);
+  assert.equal(results.leaky.ok, false);
+  assert.match(results.leaky.error, /exited with code 3/);
+  assert.ok(!results.leaky.error.includes(secret) && !results.leaky.error.includes(fileSecret) && !results.leaky.error.includes('abcdefgh12345678'), results.leaky.error);
+  assert.match(results.leaky.error, /token=\*\*\* file=\*\*\* Authorization: Bearer \*\*\*/);
+  assert.equal(results.vsfake.ok, true, results.vsfake.error);
+
+  // Install keeps variables literal so VS Code still substitutes them, and writes a private backup.
+  const report = applyInstall().find(r => r.client === 'VS Code');
+  const cfg = JSON.parse(fs.readFileSync(vscode.file, 'utf8'));
+  assert.deepEqual(cfg.inputs, original.inputs);
+  assert.equal(cfg.servers.prompted.env.API_KEY, '${input:api-key}');
+  assert.ok(cfg.servers.leaky.args.includes(leak));
+  assert.equal(fs.statSync(report.backup).mode & 0o777, 0o600);
+  applyInstall({ undo: true });
+  assert.deepEqual(JSON.parse(fs.readFileSync(vscode.file, 'utf8')), original);
+
+  // Nothing Headroom stores on disk contains the secret.
+  const stored = fs.readdirSync(process.env.HEADROOM_HOME, { recursive: true })
+    .map(f => path.join(process.env.HEADROOM_HOME, f))
+    .filter(f => fs.statSync(f).isFile() && !f.includes('backups'))
+    .map(f => fs.readFileSync(f, 'utf8'))
+    .join('\n');
+  assert.ok(!stored.includes(secret));
+  fs.rmSync(vscode.file);
+  delete process.env.HR_TEST_SECRET;
+});

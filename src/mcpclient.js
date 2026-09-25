@@ -16,7 +16,10 @@ export function listToolsStdio(entry, { timeoutMs = 30000, cwd } = {}) {
     let nextId = 1;
     const waiting = new Map();
     let stderr = '';
+    let settled = false;
     const done = (err, val) => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timer);
       child.kill();
       err ? reject(err) : resolve(val);
@@ -29,8 +32,10 @@ export function listToolsStdio(entry, { timeoutMs = 30000, cwd } = {}) {
         child.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
       });
 
+    child.stdin.on('error', () => {}); // the child may exit before we write
     child.stderr.on('data', d => (stderr += d.toString()));
     child.on('error', err => done(err));
+    child.on('exit', code => done(new Error(`exited with code ${code} before listing tools. ${stderr.trim().slice(-300)}`)));
     child.stdout.on(
       'data',
       lineReader(line => {

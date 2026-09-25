@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { home } from './paths.js';
 
 /**
@@ -43,9 +44,17 @@ export function expandEntry(entry, { vars = {}, env = process.env } = {}) {
   for (const k of ['command', 'url', 'cwd', 'envFile']) if (k in out) out[k] = sub(out[k]);
   if (Array.isArray(out.args)) out.args = out.args.map(sub);
   if (out.env) out.env = map(out.env);
+  // VS Code: envFile holds KEY=VALUE lines; values in `env` win.
+  if (typeof out.envFile === 'string' && out.envFile) {
+    try {
+      out.env = { ...parseEnvFile(fs.readFileSync(out.envFile, 'utf8')), ...(out.env || {}) };
+    } catch {
+      missing.add(`envFile ${out.envFile}`);
+    }
+  }
   if (out.headers) out.headers = map(out.headers);
   // Values the user typed straight into env or headers are just as secret as substituted ones.
-  for (const v of [...Object.values(out.env || {}), ...Object.values(out.headers || {})]) if (typeof v === 'string' && v.length >= 6) secrets.add(v);
+  for (const v of [...Object.values(out.env || {}), ...Object.values(out.headers || {})]) if (typeof v === 'string' && v.length >= 6 && !/^\$\{[^}]+\}$/.test(v)) secrets.add(v);
   return { entry: out, missing: [...missing], secrets: [...secrets] };
 }
 
@@ -54,4 +63,15 @@ export function redact(text, secrets = []) {
   let out = String(text);
   for (const s of [...secrets].sort((a, b) => b.length - a.length)) out = out.split(s).join('***');
   return out.replace(/(bearer|token|basic)\s+[A-Za-z0-9._~+/=-]{8,}/gi, '$1 ***');
+}
+
+export function parseEnvFile(text) {
+  const env = {};
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const m = line.match(/^(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/);
+    if (m) env[m[1]] = m[2].replace(/^(['"])(.*)\1$/, '$2');
+  }
+  return env;
 }
