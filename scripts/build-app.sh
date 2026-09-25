@@ -44,6 +44,12 @@ echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/engine"
 cp "$BIN" "$APP/Contents/MacOS/Headroom"
+# Sparkle ships as a framework: embed it and let the binary find it in Contents/Frameworks.
+SPARKLE="$(find "$ROOT/mac/.build" -path "*elease*" -name Sparkle.framework -type d -prune | head -1)"
+[[ -n "$SPARKLE" ]] || { echo "Sparkle.framework not found in mac/.build" >&2; exit 1; }
+mkdir -p "$APP/Contents/Frameworks"
+cp -R "$SPARKLE" "$APP/Contents/Frameworks/"
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/Headroom"
 cp "$ROOT/mac/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/mac/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 cp -R "$ROOT/src" "$ROOT/package.json" "$APP/Contents/Resources/engine/"

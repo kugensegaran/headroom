@@ -4,9 +4,13 @@ import PackageDescription
 let package = Package(
     name: "Headroom",
     platforms: [.macOS(.v14)],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0"),
+    ],
     targets: [
         .executableTarget(
             name: "Headroom",
+            dependencies: [.product(name: "Sparkle", package: "Sparkle")],
             path: "Sources/Headroom"
         ),
         .testTarget(

@@ -152,6 +152,9 @@ struct PopoverView: View {
             MenuRow(title: "Settings…", shortcut: "⌘,") { AppWindows.shared.showSettings() }
                 .keyboardShortcut(",")
             MenuRow(title: "Licence…") { AppWindows.shared.showLicense() }
+            if Updater.shared.isConfigured {
+                MenuRow(title: "Check for Updates…") { Updater.shared.checkForUpdates() }
+            }
             MenuRow(title: "About Headroom") { AppWindows.shared.showAbout() }
             MenuRow(title: "Quit Headroom", shortcut: "⌘Q") {
                 engine.stop()

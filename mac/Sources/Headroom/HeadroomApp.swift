@@ -29,6 +29,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Menu bar only: no Dock icon (LSUIElement is also set in Info.plist).
         NSApp.setActivationPolicy(.accessory)
         Engine.shared.start()
+        Updater.shared.start()
         switch UserDefaults.standard.string(forKey: "appearance") {
         case "light": NSApp.appearance = NSAppearance(named: .aqua)
         case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)

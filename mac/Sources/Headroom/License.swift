@@ -164,6 +164,7 @@ final class LicenseManager: ObservableObject {
             store.set("key", key)
             store.set("instance", a.instanceID)
             defaults.set(Date(), forKey: "licenceValidatedAt")
+            defaults.set(a.updatesUntil, forKey: UpdateWindow.defaultsKey)
             error = nil
             await report(["status": "active", "validatedAt": Self.ms(Date()), "updatesUntil": a.updatesUntil.map(Self.ms) ?? NSNull(), "email": a.email ?? NSNull()])
         } catch {
@@ -186,6 +187,7 @@ final class LicenseManager: ObservableObject {
         }
         store.set("key", nil)
         store.set("instance", nil)
+        defaults.removeObject(forKey: UpdateWindow.defaultsKey)
         await report(["status": "none"])
     }
 

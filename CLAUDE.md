@@ -12,6 +12,11 @@
   3. Note the numeric **product id** (and variant id), and the product's checkout URL.
   4. Tell Claude those three values. They are public ids, not secrets. Never paste an API key into chat; the licence API does not need one.
 
+- **M6 Sparkle signing key.** The private key must be created in your own Keychain. In Terminal, from the repo:
+  `cd ~/Documents/headroom/mac && swift package resolve && .build/artifacts/sparkle/Sparkle/bin/generate_keys`
+  It prints a public key (a line of base64). That one is public: paste it to Claude, or put it in `mac/Info.plist` under `SUPublicEDKey`. Keep the private key in the Keychain; back it up with `generate_keys -x ~/sparkle-private-key` somewhere safe (a password manager), because losing it means existing installs can never update.
+- **M6 where updates are hosted.** This repo is private, so its Releases cannot be downloaded by customers. Proposed: a public repo `kugensegaran/headroom-releases` with GitHub Pages serving `appcast.xml` and each DMG attached to a Release there (already set as `SUFeedURL` in `mac/Info.plist`). Say yes and Claude creates it, or name another host.
+
 A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. One-time purchase, local only. Owner: Kugen Segaran.
 
 ## How it fits together
@@ -99,8 +104,8 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [x] Unlicensed after trial: audit and dashboard still work; proxy logging, trim and notifications need a licence.
 
 ### M6 Updates
-- [ ] Sparkle 2 via SwiftPM. STOP: Kugen runs Sparkle's `generate_keys` so the private key stays in his Keychain; public key goes in Info.plist.
-- [ ] Appcast hosted on GitHub Releases or Pages; updates offered only while the licence's update window is open.
+- [ ] WAITING Sparkle 2 via SwiftPM. STOP: Kugen runs Sparkle's `generate_keys` so the private key stays in his Keychain; public key goes in Info.plist. (Sparkle is integrated, embedded by build-app.sh, and switches itself on once `SUPublicEDKey` is set; "Check for Updates…" appears in the menu then.)
+- [ ] WAITING Appcast hosted on GitHub Releases or Pages; updates offered only while the licence's update window is open. (Window filter done and tested in UpdateWindow; hosting waits on Kugen's yes to a public releases repo.)
 
 ### M7 Release pipeline
 - [ ] `scripts/release.sh`: bundle node, sign node and app with Developer ID (hardened runtime, JIT entitlements for node), notarize, staple, build DMG, draft GitHub Release. Kugen has an Apple Developer account.
