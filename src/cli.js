@@ -78,7 +78,7 @@ async function main() {
       const results = await runAudit({ only: only.length ? only : undefined, onProgress: n => !flag('--json') && process.stderr.write(`checking ${n}...\n`) });
       const summary = buildSummary();
       if (flag('--json')) return console.log(JSON.stringify({ results, summary }, null, 2));
-      if (!results.length) console.log('No MCP servers found in Claude Desktop, Claude Code, Cursor or VS Code configs.');
+      if (!results.length) return console.log('No MCP servers found in Claude Desktop, Claude Code, Cursor or VS Code configs.');
       for (const r of results.filter(r => !r.ok)) console.log(`! ${r.name}: ${r.error}`);
       printSummary(summary);
       return;

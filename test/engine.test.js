@@ -177,3 +177,14 @@ test('live stream pushes new calls', async () => {
   server.closeAllConnections();
   server.close();
 });
+
+test('audit with no configured servers says so once', async () => {
+  const empty = fs.mkdtempSync(path.join(os.tmpdir(), 'headroom-empty-'));
+  const { execFileSync } = await import('node:child_process');
+  const out = execFileSync(process.execPath, [CLI, 'audit'], {
+    env: { ...process.env, HEADROOM_HOME: path.join(empty, 'data'), HEADROOM_USER_HOME: path.join(empty, 'home') },
+    encoding: 'utf8',
+  });
+  assert.match(out, /No MCP servers found/);
+  assert.doesNotMatch(out, /No data yet/);
+});

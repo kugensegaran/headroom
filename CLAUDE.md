@@ -1,5 +1,11 @@
 # Headroom
 
+## Waiting on Kugen
+
+- **M2 real-world check needs at least one local MCP server.** This Mac has none: the Figma, Claude Docs and Google Drive tools are claude.ai connectors and never touch a local config. Add one or two servers you will actually use, for example in Terminal:
+  `claude mcp add --scope user filesystem -- npx -y @modelcontextprotocol/server-filesystem ~/Documents`
+  and/or add the same entry to Claude Desktop (Settings, Developer, Edit config). Then tell Claude "servers added". Claude runs `headroom install`; you restart Claude Desktop and Claude Code, use a tool or two, and run `/context` in Claude Code so the token numbers can be compared.
+
 A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. One-time purchase, local only. Owner: Kugen Segaran.
 
 ## How it fits together
@@ -59,11 +65,12 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [x] `git config core.hooksPath .githooks` runs from build-app.sh so fresh clones keep the authorship hook.
 
 ### M2 Real-world check on this Mac
-- [ ] `node src/cli.js audit` against Kugen's real configs; fix every server that fails for a reason on our side.
-- [ ] `node src/cli.js install`; ask Kugen to restart Claude Desktop and Claude Code and use tools; confirm calls appear in the dashboard and popover.
-- [ ] Sanity-check token estimates: compare one server's total against the client's own context readout (Claude Code `/context`). Note the gap in docs/ACCURACY.md.
+- [x] `node src/cli.js audit` against Kugen's real configs; fix every server that fails for a reason on our side. (2026-09-25: no local servers configured on this Mac, only claude.ai connectors, which run remotely and are out of Headroom's reach. Fixed the contradictory empty-audit message.)
+- [ ] WAITING `node src/cli.js install`; ask Kugen to restart Claude Desktop and Claude Code and use tools; confirm calls appear in the dashboard and popover.
+- [ ] WAITING Sanity-check token estimates: compare one server's total against the client's own context readout (Claude Code `/context`). Note the gap in docs/ACCURACY.md.
 
 ### M3 Engine completeness
+- [ ] Claude Code plugin servers: `.mcp.json` inside enabled plugins (`~/.claude/plugins`, `enabledPlugins` in `~/.claude/settings.json`). Audit them; install cannot rewrite plugin files, so show them as not proxied with a reason. Tests.
 - [ ] Claude Code project servers: `~/.claude.json` `projects[*].mcpServers` and `.mcp.json` files in recent projects. Tests.
 - [ ] VS Code `inputs`/`${input:...}` values handled without leaking secrets into logs. Tests.
 - [ ] Remote HTTP servers: `headroom bridge --name X --url U [--header K:V]` stdio-to-streamable-HTTP bridge, logged like stdio. `install` wraps url servers through it when the client supports stdio; OAuth-only servers are skipped with a clear reason. Tests with a local HTTP fake server.
