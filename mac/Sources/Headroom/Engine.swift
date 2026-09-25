@@ -139,7 +139,7 @@ final class Engine: ObservableObject {
         guard !stopping else { return }
         restarts = restarts.filter { $0.timeIntervalSinceNow > -120 } + [Date()]
         if restarts.count > 5 {
-            lastError = "The engine keeps stopping. Run `headroom doctor` in Terminal to see why."
+            lastError = "The engine keeps stopping. Quit and reopen Headroom. If it keeps happening, check that Node.js is installed."
             return
         }
         Task {

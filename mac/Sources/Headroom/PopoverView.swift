@@ -139,8 +139,10 @@ struct PopoverView: View {
             .disabled(busy)
             MenuRow(title: "Route Clients Through Headroom") {
                 Task {
+                    // Repair entries left pointing at an old copy of the app or Node, then wrap anything new.
+                    let fixed = await engine.runCLI(["doctor", "--fix"])
                     let out = await engine.runCLI(["install"])
-                    message = out.contains("proxied") ? "Done. Restart your MCP clients." : "Nothing to change."
+                    message = out.contains("proxied") || fixed.contains("fixed") ? "Done. Restart your MCP clients." : "Nothing to change."
                 }
             }
             MenuRow(title: "Restore Original Configs…") { confirmRestore() }

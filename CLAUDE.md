@@ -120,7 +120,7 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [ ] WAITING STOP: domain choice and DNS by Kugen. (Then `SITE_DOMAIN=yourdomain scripts/deploy-site.sh` and point DNS at GitHub Pages.)
 
 ### M9 QA and docs
-- [ ] docs/QA.md checklist run end to end on a clean account; fix what fails.
-- [ ] README for users: install, what it changes, how to undo, privacy.
+- [ ] WAITING docs/QA.md checklist run end to end on a clean account; fix what fails. (Needs the notarized DMG from M7 and a fresh macOS user account.)
+- [x] README for users: install, what it changes, how to undo, privacy.
 
 Definition of done: M1 to M9 ticked except items blocked on a STOP, which are listed in a "Waiting on Kugen" section at the top of this file.
