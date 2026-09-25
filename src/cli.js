@@ -20,7 +20,8 @@ Usage:
   headroom trim [--days N] [--apply] [--include-idle] [--reset [server]]
                                         Keep only the tools you used in the last N days (default 7)
   headroom doctor [--fix] [--json]      Check Node, configs and wrapped entries; --fix repairs broken paths
-  headroom serve [--port 7777]          Dashboard at http://127.0.0.1:7777
+  headroom serve [--port 7777] [--parent-pid PID]
+                                        Dashboard at http://127.0.0.1:7777; exits when PID does
   headroom proxy --name NAME -- CMD...  (used by client configs) proxy one stdio server
   headroom bridge --name NAME --url URL [--header "K: V"]
                                         (used by client configs) proxy one remote HTTP server over stdio
@@ -156,6 +157,17 @@ async function main() {
       const port = Number(opt('--port', process.env.HEADROOM_PORT || 7777));
       await startServer({ port });
       console.log(`Headroom dashboard: http://127.0.0.1:${port}`);
+      // Started by the Mac app: exit with it, even if it is force quit.
+      const parent = Number(opt('--parent-pid', 0));
+      if (parent) {
+        setInterval(() => {
+          try {
+            process.kill(parent, 0);
+          } catch {
+            process.exit(0);
+          }
+        }, 2000);
+      }
       return;
     }
     default:

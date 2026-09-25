@@ -79,12 +79,12 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 
 ### M4 App completeness
 - [x] App icon and menu bar mark: assets in design/icon (see its README), wired into HeadroomApp.swift, Info.plist and build-app.sh. Built and checked in the dark menu bar; it is a template image, so the light menu bar is handled by macOS.
-- [ ] First-run onboarding window: explain, run audit, show results, offer install with a plain "you can undo this" line.
-- [ ] Settings window: context window size, budget %, retention days, launch at login (`SMAppService.mainApp`), pause.
-- [ ] "Restore original configs" menu item (runs uninstall) and a confirmation.
-- [ ] Notifications (UserNotifications): over budget, server failing repeatedly. Off by default except failures.
-- [ ] About window: name, version, copyright Kugen Segaran. No AI credit.
-- [ ] Engine lifecycle: restart engine if it dies; stop it on quit; handle port 7777 taken.
+- [x] First-run onboarding window: explain, run audit, show results, offer install with a plain "you can undo this" line.
+- [x] Settings window: context window size, budget %, retention days, launch at login (`SMAppService.mainApp`), pause.
+- [x] "Restore original configs" menu item (runs uninstall) and a confirmation.
+- [x] Notifications (UserNotifications): over budget, server failing repeatedly. Off by default except failures. (Logic done; delivery and the permission prompt still need one manual check, listed in docs/QA.md.)
+- [x] About window: name, version, copyright Kugen Segaran. No AI credit.
+- [x] Engine lifecycle: restart engine if it dies; stop it on quit; handle port 7777 taken. (Tested: restart after kill, exit on quit and on force quit via --parent-pid, falls back to 7778 when 7777 is taken by something else.)
 - [ ] Popover and dashboard checked against the Figma frames in light and dark mode.
 
 ### M5 Licensing (one-time purchase, 12 months of updates)

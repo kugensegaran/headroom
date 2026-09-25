@@ -71,8 +71,22 @@ export function buildSummary({ days = 7 } = {}) {
   }
   const slowestServer = Object.entries(slowest).sort((a, b) => b[1].total / b[1].n - a[1].total / a[1].n)[0]?.[0] || null;
 
+  // Servers failing repeatedly in the last 15 minutes: at least 3 failed calls and at least half of all calls.
+  const recent = calls.filter(e => e.ts >= Date.now() - 15 * 60000);
+  const byServer = {};
+  for (const e of recent) {
+    const s = (byServer[e.server] ||= { server: e.server, failed: 0, total: 0 });
+    s.total++;
+    if (e.status === 'error') s.failed++;
+  }
+  const failing = Object.values(byServer).filter(s => s.failed >= 3 && s.failed / s.total >= 0.5);
+
   return {
     generated: Date.now(),
+    notifyOverBudget: settings.notifyOverBudget,
+    notifyFailures: settings.notifyFailures,
+    retentionDays: settings.retentionDays,
+    failing,
     paused: settings.paused,
     contextWindow: settings.contextWindow,
     budgetPct: settings.budgetPct,

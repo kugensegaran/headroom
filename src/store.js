@@ -75,7 +75,7 @@ export function setAllowlist(value) {
 }
 
 export function getSettings() {
-  return { paused: false, budgetPct: 20, contextWindow: 200000, retentionDays: 30, ...readJson(paths.settings(), {}) };
+  return { paused: false, budgetPct: 20, contextWindow: 200000, retentionDays: 30, notifyOverBudget: false, notifyFailures: true, ...readJson(paths.settings(), {}) };
 }
 
 export function setSettings(patch) {

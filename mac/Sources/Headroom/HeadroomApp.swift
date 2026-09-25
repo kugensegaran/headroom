@@ -29,6 +29,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Menu bar only: no Dock icon (LSUIElement is also set in Info.plist).
         NSApp.setActivationPolicy(.accessory)
         Engine.shared.start()
+        // `-show settings|onboarding|about` opens a window at launch (handy for QA screenshots).
+        switch UserDefaults.standard.string(forKey: "show") {
+        case "settings": AppWindows.shared.showSettings()
+        case "about": AppWindows.shared.showAbout()
+        case "onboarding": AppWindows.shared.showOnboarding()
+        default:
+            if !UserDefaults.standard.bool(forKey: "onboarded") { AppWindows.shared.showOnboarding() }
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

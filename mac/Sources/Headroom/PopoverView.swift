@@ -128,17 +128,30 @@ struct PopoverView: View {
                 Task {
                     busy = true
                     message = "Measuring servers…"
-                    await engine.audit()
-                    message = nil
+                    let results = await engine.audit()
+                    let failed = results.filter { !$0.ok }.count
+                    message = results.isEmpty ? "No MCP servers found in your clients."
+                        : failed > 0 ? "\(failed) of \(results.count) servers could not be measured. Open the dashboard for details."
+                        : nil
                     busy = false
                 }
             }
+            .disabled(busy)
             MenuRow(title: "Route Clients Through Headroom") {
                 Task {
                     let out = await engine.runCLI(["install"])
                     message = out.contains("proxied") ? "Done. Restart your MCP clients." : "Nothing to change."
                 }
             }
+            MenuRow(title: "Restore Original Configs…") { confirmRestore() }
+            MenuRow(title: s.paused ? "Resume Proxy" : "Pause Proxy") {
+                Task { await engine.setPaused(!s.paused) }
+            }
+            .disabled(!engine.reachable)
+            Divider().padding(.vertical, 4).padding(.horizontal, 8)
+            MenuRow(title: "Settings…", shortcut: "⌘,") { AppWindows.shared.showSettings() }
+                .keyboardShortcut(",")
+            MenuRow(title: "About Headroom") { AppWindows.shared.showAbout() }
             MenuRow(title: "Quit Headroom", shortcut: "⌘Q") {
                 engine.stop()
                 NSApp.terminate(nil)
@@ -146,6 +159,22 @@ struct PopoverView: View {
             .keyboardShortcut("q")
         }
         .padding(EdgeInsets(top: 5, leading: 6, bottom: 0, trailing: 6))
+    }
+}
+
+extension PopoverView {
+    fileprivate func confirmRestore() {
+        let alert = NSAlert()
+        alert.messageText = "Restore original configs?"
+        alert.informativeText = "Headroom puts every client config back to connect to its servers directly. Calls stop showing up here until you route clients through Headroom again. Restart your MCP clients afterwards."
+        alert.addButton(withTitle: "Restore")
+        alert.addButton(withTitle: "Cancel")
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return }
+        Task {
+            let out = await engine.runCLI(["uninstall"])
+            message = out.contains("restored") ? "Restored. Restart your MCP clients." : "Nothing to restore."
+        }
     }
 }
 

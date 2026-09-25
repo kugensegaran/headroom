@@ -18,6 +18,12 @@ struct Summary: Decodable {
         let medianMs: Int?
     }
 
+    struct Failing: Decodable {
+        let server: String
+        let failed: Int
+        let total: Int
+    }
+
     let paused: Bool
     let contextWindow: Int
     let budgetPct: Double
@@ -28,6 +34,15 @@ struct Summary: Decodable {
     let hasUsageData: Bool
     let servers: [Server]
     let today: Today
+    var failing: [Failing] = []
+    var notifyOverBudget = false
+    var notifyFailures = true
+    var retentionDays = 30
+
+    private enum CodingKeys: String, CodingKey {
+        case paused, contextWindow, budgetPct, totalTokens, pctOfWindow, unusedTools, trimmableTokens, hasUsageData, servers, today
+        case failing, notifyOverBudget, notifyFailures, retentionDays
+    }
 
     static let empty = Summary(
         paused: false, contextWindow: 200_000, budgetPct: 20, totalTokens: 0, pctOfWindow: 0,

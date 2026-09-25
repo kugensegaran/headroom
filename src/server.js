@@ -6,6 +6,7 @@ import { applyTrim, planTrim, resetTrim } from './trim.js';
 import { runAudit } from './audit.js';
 
 const DASHBOARD = new URL('./dashboard.html', import.meta.url);
+const VERSION = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version;
 
 function send(res, status, body, type = 'application/json') {
   res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store' });
@@ -77,6 +78,9 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
       if (req.method === 'GET' && url.pathname === '/') {
         return send(res, 200, fs.readFileSync(DASHBOARD, 'utf8'), 'text/html; charset=utf-8');
       }
+      if (req.method === 'GET' && url.pathname === '/api/health') {
+        return send(res, 200, { app: 'headroom', version: VERSION, pid: process.pid });
+      }
       if (req.method === 'GET' && url.pathname === '/api/summary') {
         return send(res, 200, buildSummary({ days: Number(url.searchParams.get('days')) || 7 }));
       }
@@ -134,6 +138,8 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
           patch.retentionDays = body.retentionDays;
         }
         if ('paused' in body) patch.paused = !!body.paused;
+        if ('notifyOverBudget' in body) patch.notifyOverBudget = !!body.notifyOverBudget;
+        if ('notifyFailures' in body) patch.notifyFailures = !!body.notifyFailures;
         const next = setSettings(patch);
         if ('retentionDays' in patch) pruneEvents();
         return send(res, 200, next);

@@ -461,3 +461,24 @@ test('configs get a Node path that survives Homebrew upgrades', async () => {
   assert.equal(nodePath('/usr/local/bin/node'), '/usr/local/bin/node');
   assert.equal(nodePath(path.join(prefix, 'Cellar', 'node', '9.9.9', 'bin', 'node')), path.join(prefix, 'Cellar', 'node', '9.9.9', 'bin', 'node'), 'no stable link, keep as is');
 });
+
+test('health endpoint, failing servers, and serve exits with its parent', async () => {
+  const server = await startServer({ port: 0 });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const health = await (await fetch(`${base}/api/health`)).json();
+  assert.equal(health.app, 'headroom');
+  const { appendEvent } = await import('../src/store.js');
+  for (let i = 0; i < 4; i++) appendEvent({ ts: Date.now(), server: 'flaky', client: 't', method: 'tools/call', tool: 'x', ms: 5, status: i ? 'error' : 'ok' });
+  const summary = await (await fetch(`${base}/api/summary`)).json();
+  assert.deepEqual(summary.failing.find(f => f.server === 'flaky'), { server: 'flaky', failed: 3, total: 4 });
+  assert.equal(summary.notifyFailures, true);
+  assert.equal(summary.notifyOverBudget, false);
+  server.close();
+
+  const parent = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)']);
+  const serve = spawn(process.execPath, [CLI, 'serve', '--port', '0', '--parent-pid', String(parent.pid)], { env: process.env });
+  await new Promise(r => serve.stdout.once('data', r));
+  parent.kill();
+  const code = await new Promise(r => serve.on('exit', r));
+  assert.equal(code, 0);
+});
