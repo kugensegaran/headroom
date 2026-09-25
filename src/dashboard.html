@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP Meter</title>
+<title>Headroom</title>
 <style>
 :root {
   --bg: #FFFFFF; --side: #ECECEE; --panel: #FAFAFA; --alt: #F5F5F7;
@@ -154,7 +154,7 @@ const k = n => n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : Str
 const fmtMs = ms => ms == null ? '–' : ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : ms + ' ms';
 const fmtBytes = b => b >= 1024 ? (b / 1024).toFixed(1) + ' KB' : b + ' B';
 const time = ts => new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-const api = (path, body) => fetch(path, body ? { method: 'POST', headers: { 'x-mcpmeter': '1', 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(r => r.json());
+const api = (path, body) => fetch(path, body ? { method: 'POST', headers: { 'x-headroom': '1', 'content-type': 'application/json' }, body: JSON.stringify(body) } : {}).then(r => r.json());
 
 let summary = null, events = [], range = 'live', query = '', freshIds = new Set();
 const colorOf = {};
@@ -169,7 +169,7 @@ function statusOf(e) {
 function renderTable(el) {
   const rows = events.filter(e => e.method === 'tools/call').filter(e => !query || (e.tool || '').toLowerCase().includes(query) || e.server.toLowerCase().includes(query));
   if (!rows.length) {
-    el.innerHTML = `<div class="empty">${summary && summary.hasUsageData ? 'No calls match.' : 'No tool calls yet. Run <code>mcpmeter install</code>, restart your MCP clients and use a tool.'}</div>`;
+    el.innerHTML = `<div class="empty">${summary && summary.hasUsageData ? 'No calls match.' : 'No tool calls yet. Run <code>headroom install</code>, restart your MCP clients and use a tool.'}</div>`;
     return;
   }
   el.innerHTML = `<table><thead><tr><th>Time</th><th>Client</th><th>Server</th><th>Tool</th><th class="num">Latency</th><th class="num">Size</th><th>Status</th></tr></thead><tbody>${rows.slice(0, 500).map(e => {
@@ -192,7 +192,7 @@ function renderSummary() {
   $('s-ctx-sub').textContent = Math.round(s.pctOfWindow * 100) + '% of ' + k(s.contextWindow);
   $('budget-text').textContent = `${s.totalTokens.toLocaleString()} of ${s.contextWindow.toLocaleString()} tokens per turn · budget ${s.budgetPct}%`;
   $('bar').innerHTML = s.servers.map(x => `<div title="${esc(x.name)}: ${x.tokens.toLocaleString()} tokens" style="width:${(x.tokens / s.contextWindow * 100).toFixed(3)}%; background:${colorOf[x.name]}"></div>`).join('') + `<div class="budget-mark" style="left:${s.budgetPct}%"></div>`;
-  $('legend').innerHTML = s.servers.map(x => `<span><span class="dot" style="background:${colorOf[x.name]}"></span>${esc(x.name)} <span class="sub">${k(x.tokens)}</span></span>`).join('') || '<span class="sub">Run <code>mcpmeter audit</code> to measure your servers.</span>';
+  $('legend').innerHTML = s.servers.map(x => `<span><span class="dot" style="background:${colorOf[x.name]}"></span>${esc(x.name)} <span class="sub">${k(x.tokens)}</span></span>`).join('') || '<span class="sub">Run <code>headroom audit</code> to measure your servers.</span>';
   const nowH = new Date().getHours();
   const max = Math.max(1, ...s.today.perHour);
   $('hours').innerHTML = s.today.perHour.slice(0, nowH + 1).map((v, i) => `<div class="${i === nowH ? 'now' : ''}" style="height:${(v / max) * 100}%" title="${i}:00 · ${v} calls"></div>`).join('');
@@ -211,7 +211,7 @@ function renderSummary() {
 function renderServers() {
   const s = summary;
   $('servers').innerHTML = s.servers.map(x => `<details class="server"><summary><span class="dot" style="background:${colorOf[x.name]}"></span><span class="name">${esc(x.name)}</span>${x.allowlisted ? '<span class="pill">trimmed</span>' : ''}<span class="sub">${x.enabledCount}/${x.toolCount} tools on · ${x.usedCount} used · ${x.tokens.toLocaleString()} tokens</span>${x.allowlisted ? `<button class="btn plain" data-reset="${esc(x.name)}">Turn all on</button>` : ''}</summary>
-    <table><thead><tr><th>Tool</th><th class="num">Tokens</th><th>Used (7d)</th><th>State</th></tr></thead><tbody>${x.tools.slice().sort((a, b) => b.tokens - a.tokens).map(t => `<tr><td class="mono">${esc(t.name)}${t.write ? ' <span class="pill warn">write</span>' : ''}</td><td class="num">${t.tokens}</td><td>${t.used ? 'Yes' : '<span class="sub">No</span>'}</td><td>${t.enabled ? 'On' : '<span class="sub">Off</span>'}</td></tr>`).join('')}</tbody></table></details>`).join('') || '<div class="empty">No servers measured yet. Run <code>mcpmeter audit</code>.</div>';
+    <table><thead><tr><th>Tool</th><th class="num">Tokens</th><th>Used (7d)</th><th>State</th></tr></thead><tbody>${x.tools.slice().sort((a, b) => b.tokens - a.tokens).map(t => `<tr><td class="mono">${esc(t.name)}${t.write ? ' <span class="pill warn">write</span>' : ''}</td><td class="num">${t.tokens}</td><td>${t.used ? 'Yes' : '<span class="sub">No</span>'}</td><td>${t.enabled ? 'On' : '<span class="sub">Off</span>'}</td></tr>`).join('')}</tbody></table></details>`).join('') || '<div class="empty">No servers measured yet. Run <code>headroom audit</code>.</div>';
 }
 
 async function renderFixes() {

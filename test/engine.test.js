@@ -5,9 +5,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'mcpmeter-'));
-process.env.MCPMETER_HOME = path.join(tmp, 'data');
-process.env.MCPMETER_USER_HOME = path.join(tmp, 'home');
+const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'headroom-'));
+process.env.HEADROOM_HOME = path.join(tmp, 'data');
+process.env.HEADROOM_USER_HOME = path.join(tmp, 'home');
 const CLI = new URL('../src/cli.js', import.meta.url).pathname;
 const FAKE = new URL('./fake-server.js', import.meta.url).pathname;
 
@@ -44,7 +44,7 @@ function session(name = 'fake') {
 }
 
 before(() => {
-  const home = process.env.MCPMETER_USER_HOME;
+  const home = process.env.HEADROOM_USER_HOME;
   fs.mkdirSync(path.join(home, '.cursor'), { recursive: true });
   fs.writeFileSync(path.join(home, '.cursor', 'mcp.json'), JSON.stringify({ mcpServers: { fake: { command: process.execPath, args: [FAKE] }, remote: { url: 'https://example.invalid/mcp' } } }));
 });
@@ -141,10 +141,10 @@ test('dashboard API serves summary, events, guards writes and host', async () =>
   assert.ok(events.length >= 1);
   assert.ok(events[0].ts >= events[events.length - 1].ts, 'newest first');
   const html = await (await fetch(base)).text();
-  assert.match(html, /MCP Meter/);
+  assert.match(html, /Headroom/);
   const noHeader = await fetch(`${base}/api/pause`, { method: 'POST', body: '{}' });
   assert.equal(noHeader.status, 403);
-  const paused = await (await fetch(`${base}/api/pause`, { method: 'POST', headers: { 'x-mcpmeter': '1' }, body: JSON.stringify({ paused: false }) })).json();
+  const paused = await (await fetch(`${base}/api/pause`, { method: 'POST', headers: { 'x-headroom': '1' }, body: JSON.stringify({ paused: false }) })).json();
   assert.equal(paused.paused, false);
   const http = await import('node:http');
   const evilStatus = await new Promise(res => http.get({ host: '127.0.0.1', port, path: '/api/summary', headers: { host: 'evil.example' } }, r => { r.resume(); res(r.statusCode); }));

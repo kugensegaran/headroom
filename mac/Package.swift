@@ -2,12 +2,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "MCPMeter",
+    name: "Headroom",
     platforms: [.macOS(.v14)],
     targets: [
         .executableTarget(
-            name: "MCPMeter",
-            path: "Sources/MCPMeter"
+            name: "Headroom",
+            path: "Sources/Headroom"
         )
     ]
 )

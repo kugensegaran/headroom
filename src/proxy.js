@@ -25,7 +25,7 @@ export function runProxy({ name, command, args, stdin = process.stdin, stdout = 
     try {
       appendEvent({ server: name, client: clientName, ...event });
     } catch (err) {
-      stderr.write(`[mcpmeter] could not write event: ${err.message}\n`);
+      stderr.write(`[headroom] could not write event: ${err.message}\n`);
     }
   };
 
@@ -44,7 +44,7 @@ export function runProxy({ name, command, args, stdin = process.stdin, stdout = 
         const allow = allowed();
         if (allow && !allow.has(tool)) {
           log({ ts: Date.now(), method: 'tools/call', tool, ms: 0, reqBytes: line.length, resBytes: 0, status: 'blocked', write: isWriteTool(tool || '') });
-          toClient({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: `Tool "${tool}" is turned off in MCP Meter.` } });
+          toClient({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: `Tool "${tool}" is turned off in Headroom.` } });
           return;
         }
       }
@@ -96,7 +96,7 @@ export function runProxy({ name, command, args, stdin = process.stdin, stdout = 
     if (stdout === process.stdout) process.exit(code ?? 0);
   });
   child.on('error', err => {
-    stderr.write(`[mcpmeter] could not start ${command}: ${err.message}\n`);
+    stderr.write(`[headroom] could not start ${command}: ${err.message}\n`);
     if (stdout === process.stdout) process.exit(1);
   });
   return child;

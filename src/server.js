@@ -67,7 +67,7 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
     if (!['127.0.0.1', 'localhost'].includes(hostHeader)) return send(res, 403, { error: 'forbidden' });
     const url = new URL(req.url, `http://${req.headers.host}`);
     // State-changing calls need a custom header, which a cross-site page cannot send without a preflight we never approve.
-    if (req.method === 'POST' && req.headers['x-mcpmeter'] !== '1') return send(res, 403, { error: 'missing x-mcpmeter header' });
+    if (req.method === 'POST' && req.headers['x-headroom'] !== '1') return send(res, 403, { error: 'missing x-headroom header' });
 
     try {
       if (req.method === 'GET' && url.pathname === '/') {

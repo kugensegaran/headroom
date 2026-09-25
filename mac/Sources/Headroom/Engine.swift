@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-/// Runs the Node engine (`mcpmeter serve`) and polls its local API.
+/// Runs the Node engine (`headroom serve`) and polls its local API.
 @MainActor
 final class Engine: ObservableObject {
     static let shared = Engine()
@@ -16,7 +16,7 @@ final class Engine: ObservableObject {
 
     var baseURL: URL { URL(string: "http://127.0.0.1:\(port)")! }
 
-    init(port: Int = Int(ProcessInfo.processInfo.environment["MCPMETER_PORT"] ?? "") ?? 7777) {
+    init(port: Int = Int(ProcessInfo.processInfo.environment["HEADROOM_PORT"] ?? "") ?? 7777) {
         self.port = port
     }
 
@@ -39,9 +39,9 @@ final class Engine: ObservableObject {
         process = nil
     }
 
-    /// Engine files: bundled in the .app (Resources/engine) or the repo checkout (MCPMETER_ENGINE).
+    /// Engine files: bundled in the .app (Resources/engine) or the repo checkout (HEADROOM_ENGINE).
     private var engineCLI: URL? {
-        if let override = ProcessInfo.processInfo.environment["MCPMETER_ENGINE"] {
+        if let override = ProcessInfo.processInfo.environment["HEADROOM_ENGINE"] {
             return URL(fileURLWithPath: override).appendingPathComponent("src/cli.js")
         }
         if let res = Bundle.main.resourceURL?.appendingPathComponent("engine/src/cli.js"),
@@ -122,7 +122,7 @@ final class Engine: ObservableObject {
     private func post(_ path: String, body: [String: Any] = [:]) async {
         var req = URLRequest(url: baseURL.appendingPathComponent(path))
         req.httpMethod = "POST"
-        req.setValue("1", forHTTPHeaderField: "x-mcpmeter")
+        req.setValue("1", forHTTPHeaderField: "x-headroom")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
         _ = try? await URLSession.shared.data(for: req)

@@ -2,10 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>CFBundleName</key><string>MCP Meter</string>
-  <key>CFBundleDisplayName</key><string>MCP Meter</string>
-  <key>CFBundleIdentifier</key><string>com.kugensegaran.mcpmeter</string>
-  <key>CFBundleExecutable</key><string>MCPMeter</string>
+  <key>CFBundleName</key><string>Headroom</string>
+  <key>CFBundleDisplayName</key><string>Headroom</string>
+  <key>CFBundleIdentifier</key><string>com.kugensegaran.headroom</string>
+  <key>CFBundleExecutable</key><string>Headroom</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1.0</string>
   <key>CFBundleVersion</key><string>1</string>

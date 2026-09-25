@@ -39,7 +39,7 @@ struct PopoverView: View {
 
     private var header: some View {
         HStack {
-            Text("MCP Meter").font(.system(size: 13, weight: .semibold))
+            Text("Headroom").font(.system(size: 13, weight: .semibold))
             Spacer()
             Toggle(isOn: Binding(
                 get: { !s.paused },
@@ -133,13 +133,13 @@ struct PopoverView: View {
                     busy = false
                 }
             }
-            MenuRow(title: "Route Clients Through MCP Meter") {
+            MenuRow(title: "Route Clients Through Headroom") {
                 Task {
                     let out = await engine.runCLI(["install"])
                     message = out.contains("proxied") ? "Done. Restart your MCP clients." : "Nothing to change."
                 }
             }
-            MenuRow(title: "Quit MCP Meter", shortcut: "⌘Q") {
+            MenuRow(title: "Quit Headroom", shortcut: "⌘Q") {
                 engine.stop()
                 NSApp.terminate(nil)
             }

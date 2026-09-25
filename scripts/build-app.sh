@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build "MCP Meter.app" on macOS.
+# Build "Headroom.app" on macOS.
 #   scripts/build-app.sh                 debug-signed app using the Node already on this Mac
 #   scripts/build-app.sh --bundle-node   also bundle an official Node binary (self-contained app)
 #   scripts/build-app.sh --run           build, then open the app
@@ -8,7 +8,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="$ROOT/build"
-APP="$OUT/MCP Meter.app"
+APP="$OUT/Headroom.app"
 NODE_VERSION="${NODE_VERSION:-22.20.0}"
 BUNDLE_NODE=0
 RUN=0
@@ -26,18 +26,35 @@ fi
 
 echo "==> Engine: installing dependencies and running tests"
 cd "$ROOT"
+git config core.hooksPath .githooks 2>/dev/null || true
 npm install --silent
 npm test
 
 echo "==> Swift: building menu bar app"
 cd "$ROOT/mac"
+# Command Line Tools ship without the SwiftUIMacros plugin that macOS 26+ SDKs
+# require for @State, @Binding, etc. If the plugin is missing, build against
+# the newest SDK that still exposes those as property wrappers.
+if ! find "$(xcode-select -p)" -name "libSwiftUIMacros*.dylib" -print -quit 2>/dev/null | grep -q .; then
+  fallback=""
+  for candidate in MacOSX26.sdk MacOSX15.sdk MacOSX14.sdk; do
+    if [[ -d "$(xcode-select -p)/SDKs/$candidate" ]]; then
+      fallback="$(xcode-select -p)/SDKs/$candidate"
+      break
+    fi
+  done
+  if [[ -n "$fallback" ]]; then
+    echo "    SwiftUIMacros plugin not found, pinning SDKROOT=$fallback"
+    export SDKROOT="$fallback"
+  fi
+fi
 swift build -c release
-BIN="$(swift build -c release --show-bin-path)/MCPMeter"
+BIN="$(swift build -c release --show-bin-path)/Headroom"
 
 echo "==> Assembling $APP"
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/engine"
-cp "$BIN" "$APP/Contents/MacOS/MCPMeter"
+cp "$BIN" "$APP/Contents/MacOS/Headroom"
 cp "$ROOT/mac/Info.plist" "$APP/Contents/Info.plist"
 cp -R "$ROOT/src" "$ROOT/package.json" "$APP/Contents/Resources/engine/"
 (cd "$APP/Contents/Resources/engine" && npm install --omit=dev --silent)
@@ -57,6 +74,6 @@ codesign --force --deep --sign - "$APP"
 
 echo "Built: $APP"
 if [[ $RUN == 1 ]]; then
-  pkill -x MCPMeter 2>/dev/null || true
+  pkill -x Headroom 2>/dev/null || true
   open "$APP"
 fi

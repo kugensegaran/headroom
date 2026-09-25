@@ -1,4 +1,4 @@
-# MCP Meter
+# Headroom
 
 See what your MCP servers cost you before you type a word, and watch every tool call live.
 
@@ -15,4 +15,4 @@ node src/cli.js uninstall    # put configs back
 
 ## Mac app
 
-`scripts/build-app.sh --run` builds `build/MCP Meter.app`. See CLAUDE.md for the architecture and roadmap, and docs/RELEASE.md for signing.
+`scripts/build-app.sh --run` builds `build/Headroom.app`. See CLAUDE.md for the architecture and roadmap, and docs/RELEASE.md for signing.

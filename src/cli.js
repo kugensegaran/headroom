@@ -7,17 +7,17 @@ import { buildSummary } from './summary.js';
 import { startServer } from './server.js';
 import { dataDir } from './paths.js';
 
-const HELP = `mcpmeter: see what your MCP servers cost you and what they're doing.
+const HELP = `headroom: see what your MCP servers cost you and what they're doing.
 
 Usage:
-  mcpmeter audit [--json] [server...]   Connect to every configured server and measure its tools
-  mcpmeter status [--json]              Context cost, usage and issues from the latest data
-  mcpmeter install [--dry-run]          Route stdio servers in Claude, Claude Code, Cursor, VS Code through the proxy
-  mcpmeter uninstall                    Put every client config back to direct connections
-  mcpmeter trim [--days N] [--apply] [--include-idle] [--reset [server]]
+  headroom audit [--json] [server...]   Connect to every configured server and measure its tools
+  headroom status [--json]              Context cost, usage and issues from the latest data
+  headroom install [--dry-run]          Route stdio servers in Claude, Claude Code, Cursor, VS Code through the proxy
+  headroom uninstall                    Put every client config back to direct connections
+  headroom trim [--days N] [--apply] [--include-idle] [--reset [server]]
                                         Keep only the tools you used in the last N days (default 7)
-  mcpmeter serve [--port 7777]          Dashboard at http://127.0.0.1:7777
-  mcpmeter proxy --name NAME -- CMD...  (used by client configs) proxy one stdio server
+  headroom serve [--port 7777]          Dashboard at http://127.0.0.1:7777
+  headroom proxy --name NAME -- CMD...  (used by client configs) proxy one stdio server
 
 Data lives in: ${dataDir()}
 `;
@@ -36,7 +36,7 @@ const lpad = (s, n) => String(s).padStart(n);
 
 function printSummary(s) {
   if (!s.servers.length) {
-    console.log('No data yet. Run `mcpmeter audit` first.');
+    console.log('No data yet. Run `headroom audit` first.');
     return;
   }
   console.log(`\nContext loaded per turn: ${s.totalTokens.toLocaleString('en-US')} tokens (${pct(s.pctOfWindow)} of ${k(s.contextWindow)}, budget ${s.budgetPct}%)\n`);
@@ -53,10 +53,10 @@ function printSummary(s) {
   if (writes.length) console.log(`\nWrite or delete tools loaded: ${writes.length} (e.g. ${writes.slice(0, 4).join(', ')})`);
   if (s.hasUsageData) {
     console.log(`\nToday: ${s.today.calls} tool calls, ${pct(s.today.failedPct)} failed, median ${s.today.medianMs ?? '-'} ms`);
-    if (s.trimmableTokens) console.log(`${s.unusedTools} tools unused in 7 days. \`mcpmeter trim --apply\` saves about ${k(s.trimmableTokens)} tokens per turn.`);
+    if (s.trimmableTokens) console.log(`${s.unusedTools} tools unused in 7 days. \`headroom trim --apply\` saves about ${k(s.trimmableTokens)} tokens per turn.`);
     if (s.idleServers.length) console.log(`Not called in 7 days: ${s.idleServers.join(', ')}. Consider removing them from your client config.`);
   } else {
-    console.log('\nNo usage data yet. Run `mcpmeter install` so calls go through the proxy.');
+    console.log('\nNo usage data yet. Run `headroom install` so calls go through the proxy.');
   }
   console.log('');
 }
@@ -67,7 +67,7 @@ async function main() {
       const sep = argv.indexOf('--');
       const name = opt('--name');
       if (!name || sep < 0 || !argv[sep + 1]) {
-        console.error('usage: mcpmeter proxy --name NAME -- COMMAND [ARGS...]');
+        console.error('usage: headroom proxy --name NAME -- COMMAND [ARGS...]');
         process.exit(2);
       }
       runProxy({ name, command: argv[sep + 1], args: argv.slice(sep + 2) });
@@ -115,9 +115,9 @@ async function main() {
       return;
     }
     case 'serve': {
-      const port = Number(opt('--port', process.env.MCPMETER_PORT || 7777));
+      const port = Number(opt('--port', process.env.HEADROOM_PORT || 7777));
       await startServer({ port });
-      console.log(`MCP Meter dashboard: http://127.0.0.1:${port}`);
+      console.log(`Headroom dashboard: http://127.0.0.1:${port}`);
       return;
     }
     default:

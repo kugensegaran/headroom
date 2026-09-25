@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { lineReader, tryParse } from './lines.js';
 
 const PROTOCOL = '2025-06-18';
-const CLIENT_INFO = { name: 'mcpmeter-audit', version: '0.1.0' };
+const CLIENT_INFO = { name: 'headroom-audit', version: '0.1.0' };
 
 /** Connect to a stdio server, list its tools, and shut it down. */
 export function listToolsStdio(entry, { timeoutMs = 30000 } = {}) {

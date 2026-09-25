@@ -3,15 +3,15 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 export function home() {
-  return process.env.MCPMETER_USER_HOME || os.homedir();
+  return process.env.HEADROOM_USER_HOME || os.homedir();
 }
 
 export function dataDir() {
-  if (process.env.MCPMETER_HOME) return process.env.MCPMETER_HOME;
+  if (process.env.HEADROOM_HOME) return process.env.HEADROOM_HOME;
   if (process.platform === 'darwin') {
-    return path.join(home(), 'Library', 'Application Support', 'MCPMeter');
+    return path.join(home(), 'Library', 'Application Support', 'Headroom');
   }
-  return path.join(home(), '.mcpmeter');
+  return path.join(home(), '.headroom');
 }
 
 export function ensureDir(dir) {

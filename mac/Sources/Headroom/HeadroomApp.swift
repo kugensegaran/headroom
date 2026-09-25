@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct MCPMeterApp: App {
+struct HeadroomApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var engine = Engine.shared
 
