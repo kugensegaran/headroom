@@ -15,6 +15,8 @@
 - **M6 Sparkle signing key.** The private key must be created in your own Keychain. In Terminal, from the repo:
   `cd ~/Documents/headroom/mac && swift package resolve && .build/artifacts/sparkle/Sparkle/bin/generate_keys`
   It prints a public key (a line of base64). That one is public: paste it to Claude, or put it in `mac/Info.plist` under `SUPublicEDKey`. Keep the private key in the Keychain; back it up with `generate_keys -x ~/sparkle-private-key` somewhere safe (a password manager), because losing it means existing installs can never update.
+- **M7 Developer ID certificate.** None is installed on this Mac. In Xcode: Settings, Accounts, your Apple Developer team, Manage Certificates, +, Developer ID Application. Then `security find-identity -v -p codesigning` should list it.
+- **M7 notarization credentials.** In Terminal (not chat): create an app-specific password at account.apple.com, then `xcrun notarytool store-credentials headroom --apple-id kugenesh@gmail.com --team-id YOURTEAMID` and paste the password when it asks.
 - **M6 where updates are hosted.** This repo is private, so its Releases cannot be downloaded by customers. Proposed: a public repo `kugensegaran/headroom-releases` with GitHub Pages serving `appcast.xml` and each DMG attached to a Release there (already set as `SUFeedURL` in `mac/Info.plist`). Say yes and Claude creates it, or name another host.
 
 A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. One-time purchase, local only. Owner: Kugen Segaran.
@@ -108,9 +110,9 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [ ] WAITING Appcast hosted on GitHub Releases or Pages; updates offered only while the licence's update window is open. (Window filter done and tested in UpdateWindow; hosting waits on Kugen's yes to a public releases repo.)
 
 ### M7 Release pipeline
-- [ ] `scripts/release.sh`: bundle node, sign node and app with Developer ID (hardened runtime, JIT entitlements for node), notarize, staple, build DMG, draft GitHub Release. Kugen has an Apple Developer account.
-- [ ] STOP: Kugen runs `xcrun notarytool store-credentials headroom ...` himself (app-specific password never goes through chat).
-- [ ] Notarized DMG installs and runs on a clean user account.
+- [ ] WAITING `scripts/release.sh`: bundle node, sign node and app with Developer ID (hardened runtime, JIT entitlements for node), notarize, staple, build DMG, draft GitHub Release. Kugen has an Apple Developer account. (Written; `--adhoc` run verified: bundled node runs under hardened runtime with JIT entitlements, app launches from the DMG build. The notarized run waits on the certificate and credentials.)
+- [ ] WAITING STOP: Kugen runs `xcrun notarytool store-credentials headroom ...` himself (app-specific password never goes through chat).
+- [ ] WAITING Notarized DMG installs and runs on a clean user account.
 
 ### M8 Website
 - [ ] `site/`: landing page and free in-browser audit from the Figma design, static, no tracking, no AI credit. Deploy to GitHub Pages.
