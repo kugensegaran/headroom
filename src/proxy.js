@@ -2,7 +2,6 @@ import { spawn } from 'node:child_process';
 import { lineReader, tryParse } from './lines.js';
 import { appendEvent, getAllowlist, getSettings, saveCatalog } from './store.js';
 import { isWriteTool, serverTokens } from './tokens.js';
-import { isLicensed } from './license.js';
 import { serverEnv } from './paths.js';
 import { clientId, toolAllowed } from './allowlist.js';
 import { FIXES, applyFixes } from './compat.js';
@@ -34,7 +33,7 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
   };
 
   const log = event => {
-    if (getSettings().paused || !isLicensed()) return;
+    if (getSettings().paused) return;
     try {
       appendEvent({ server: name, client: clientName, ...event });
     } catch (err) {

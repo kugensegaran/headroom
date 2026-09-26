@@ -78,6 +78,11 @@ export function getSettings() {
   return { paused: false, budgetPct: 20, contextWindow: 200000, retentionDays: 30, notifyOverBudget: false, notifyFailures: true, compat: {}, writeToolsOff: false, ...readJson(paths.settings(), {}) };
 }
 
+/** A brand new install starts with write and delete tools off. Existing installs keep everything on. */
+export function ensureFirstRunSettings() {
+  if (!fs.existsSync(paths.settings())) setSettings({ writeToolsOff: true });
+}
+
 export function setSettings(patch) {
   const next = { ...getSettings(), ...patch };
   writeJson(paths.settings(), next);

@@ -32,10 +32,6 @@ final class Engine: ObservableObject {
         Task {
             await connectOrLaunch()
             await refresh()
-            await LicenseManager.shared.validateIfDue()
-        }
-        Timer.scheduledTimer(withTimeInterval: 86400, repeats: true) { _ in
-            Task { await LicenseManager.shared.validateIfDue() }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 3, repeats: true) { [weak self] _ in
             Task { await self?.refresh() }
@@ -194,7 +190,6 @@ final class Engine: ObservableObject {
         return data
     }
 
-    func postLicense(_ body: [String: Any]) async { await post("api/license", body: body) }
     func setPaused(_ paused: Bool) async { await post("api/pause", body: ["paused": paused]) }
     func trim() async { await post("api/trim", body: ["days": 7]) }
     func updateSettings(_ patch: [String: Any]) async { await post("api/settings", body: patch) }

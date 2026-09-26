@@ -5,7 +5,6 @@ import { clientLabel, discoverServers, knownClients } from './clients.js';
 import { LOADING, contextWindows } from './profiles.js';
 import { toolAllowed } from './allowlist.js';
 import { FIXES, fixList } from './compat.js';
-import { licenseState } from './license.js';
 
 /**
  * One view of the world for the CLI, the dashboard and the menu bar app:
@@ -99,7 +98,6 @@ export function buildSummary({ days = 7 } = {}) {
     compat: fixList(settings),
     writeToolsOff: settings.writeToolsOff,
     fixes: compatNotes(events),
-    license: licenseState(),
     paused: settings.paused,
     contextWindow: heaviest ? heaviest.window : settings.contextWindow,
     estimated: true,

@@ -1,9 +1,9 @@
 import Foundation
 import Sparkle
 
-/// Sparkle updates, offered only for releases published inside the licence's update window.
+/// Sparkle updates.
 @MainActor
-final class Updater: NSObject, SPUUpdaterDelegate {
+final class Updater {
     static let shared = Updater()
     private var controller: SPUStandardUpdaterController?
 
@@ -16,40 +16,10 @@ final class Updater: NSObject, SPUUpdaterDelegate {
 
     func start() {
         guard isConfigured, controller == nil else { return }
-        controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: self, userDriverDelegate: nil)
+        controller = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
     }
 
     func checkForUpdates() {
         controller?.checkForUpdates(nil)
-    }
-
-    nonisolated func bestValidUpdate(in appcast: SUAppcast, for updater: SPUUpdater) -> SUAppcastItem? {
-        let until = UserDefaults.standard.object(forKey: UpdateWindow.defaultsKey) as? Date
-        let items = appcast.items.filter { $0.minimumOperatingSystemVersionIsOK && $0.maximumOperatingSystemVersionIsOK }
-        let pick = UpdateWindow.pick(items.map { UpdateWindow.Release(version: $0.versionString, date: $0.date) }, until: until)
-        return pick.map { items[$0] } ?? SUAppcastItem.empty()
-    }
-}
-
-/// The rule, kept apart from Sparkle so it can be tested.
-enum UpdateWindow {
-    static let defaultsKey = "licenceUpdatesUntil"
-
-    struct Release {
-        let version: String
-        let date: Date?
-    }
-
-    /// Newest release published on or before `until`. No date limit when there is no licence window
-    /// (trial, or unlicensed), so people can always get the version they would be buying.
-    static func pick(_ releases: [Release], until: Date?) -> Int? {
-        let comparator = SUStandardVersionComparator()
-        var best: Int?
-        for (i, r) in releases.enumerated() {
-            if let until, let date = r.date, date > until { continue }
-            if let b = best, comparator.compareVersion(r.version, toVersion: releases[b].version) != .orderedDescending { continue }
-            best = i
-        }
-        return best
     }
 }

@@ -158,7 +158,6 @@ struct PopoverView: View {
             Divider().padding(.vertical, 4).padding(.horizontal, 8)
             MenuRow(title: "Settings…", shortcut: "⌘,") { AppWindows.shared.showSettings() }
                 .keyboardShortcut(",")
-            MenuRow(title: "Licence…") { AppWindows.shared.showLicense() }
             if Updater.shared.isConfigured {
                 MenuRow(title: "Check for Updates…") { Updater.shared.checkForUpdates() }
             }

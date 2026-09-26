@@ -7,9 +7,8 @@ import { applyTrim, applyVsCodeProfile, planTrim, planVsCodeProfile, resetTrim }
 import { buildSummary } from './summary.js';
 import { startServer } from './server.js';
 import { dataDir } from './paths.js';
-import { pruneEvents } from './store.js';
+import { ensureFirstRunSettings, pruneEvents } from './store.js';
 import { runDoctor } from './doctor.js';
-import { ensureTrialStarted } from './license.js';
 
 const HELP = `headroom: every MCP server, working in every client. See every call.
 
@@ -80,7 +79,7 @@ function prune() {
 }
 
 async function main() {
-  if (['serve', 'install', 'audit'].includes(cmd)) ensureTrialStarted();
+  if (['serve', 'install', 'audit'].includes(cmd)) ensureFirstRunSettings();
   switch (cmd) {
     case 'proxy': {
       const sep = argv.indexOf('--');

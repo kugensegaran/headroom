@@ -7,6 +7,6 @@
   "files": ["src"],
   "engines": { "node": ">=20" },
   "scripts": { "test": "node --test test/*.test.js" },
-  "license": "UNLICENSED",
+  "license": "MIT",
   "dependencies": { "js-tiktoken": "^1.0.21" }
 }

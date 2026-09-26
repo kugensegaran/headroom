@@ -13,10 +13,5 @@ let package = Package(
             dependencies: [.product(name: "Sparkle", package: "Sparkle")],
             path: "Sources/Headroom"
         ),
-        .testTarget(
-            name: "HeadroomTests",
-            dependencies: ["Headroom"],
-            path: "Tests/HeadroomTests"
-        ),
     ]
 )

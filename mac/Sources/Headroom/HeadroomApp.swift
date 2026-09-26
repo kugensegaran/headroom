@@ -39,7 +39,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         switch UserDefaults.standard.string(forKey: "show") {
         case "settings": AppWindows.shared.showSettings()
         case "about": AppWindows.shared.showAbout()
-        case "licence": AppWindows.shared.showLicense()
         case "onboarding": AppWindows.shared.showOnboarding()
         case "popover": AppWindows.shared.show("popover", title: "Headroom") { PopoverView() }
         default:

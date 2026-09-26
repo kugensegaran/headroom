@@ -1,6 +1,5 @@
 import { getAllowlist, readEvents, setAllowlist } from './store.js';
 import { buildSummary } from './summary.js';
-import { NEEDS_LICENCE, licenseState } from './license.js';
 import { CLIENT_IDS, clientId } from './allowlist.js';
 
 /**
@@ -39,7 +38,6 @@ export function planTrim({ days = 7, includeIdle = false, keep = {} } = {}) {
 }
 
 export function applyTrim(opts) {
-  if (!licenseState().licensed) throw new Error(NEEDS_LICENCE);
   const plan = planTrim(opts);
   setAllowlist(plan.next);
   return plan;
@@ -86,7 +84,6 @@ export function planVsCodeProfile({ days = 30, limit = VSCODE_LIMIT } = {}) {
 }
 
 export function applyVsCodeProfile(opts) {
-  if (!licenseState().licensed) throw new Error(NEEDS_LICENCE);
   const plan = planVsCodeProfile(opts);
   const next = JSON.parse(JSON.stringify(getAllowlist()));
   for (const [server, tools] of Object.entries(plan.lists)) {
