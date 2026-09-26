@@ -2,6 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import { eventFile, getAllowlist, getSettings, pruneEvents, readEvents, setSettings } from './store.js';
 import { CLIENT_IDS, setToolList } from './allowlist.js';
+import { FIXES } from './compat.js';
 import { buildSummary } from './summary.js';
 import { applyTrim, applyVsCodeProfile, planTrim, planVsCodeProfile, resetTrim } from './trim.js';
 import { runAudit } from './audit.js';
@@ -172,7 +173,13 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
         if ('paused' in body) patch.paused = !!body.paused;
         if ('notifyOverBudget' in body) patch.notifyOverBudget = !!body.notifyOverBudget;
         if ('notifyFailures' in body) patch.notifyFailures = !!body.notifyFailures;
-        if ('compatFixes' in body) patch.compatFixes = !!body.compatFixes;
+        if ('compat' in body) {
+          const ids = FIXES.map(f => f.id);
+          if (!body.compat || typeof body.compat !== 'object' || Object.entries(body.compat).some(([id, on]) => !ids.includes(id) || typeof on !== 'boolean')) {
+            return send(res, 400, { error: `compat must map fix ids (${ids.join(', ')}) to true or false` });
+          }
+          patch.compat = { ...(getSettings().compat || {}), ...body.compat };
+        }
         if ('writeToolsOff' in body) patch.writeToolsOff = !!body.writeToolsOff;
         const next = setSettings(patch);
         if ('retentionDays' in patch) pruneEvents();

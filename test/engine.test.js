@@ -598,7 +598,8 @@ test('compatibility fix removes $schema from tool schemas, logs it, and can be t
     await s.close();
     return { tools: list.result.tools, call };
   };
-  assert.equal(getSettings().compatFixes, true, 'on by default');
+  const { fixList } = await import('../src/compat.js');
+  assert.deepEqual(fixList(getSettings()).map(f => [f.id, f.enabled]), [['schema-dialect', true]], 'on by default');
 
   const { tools, call } = await listVia('draft7');
   assert.equal(call.result.content[0].text, 'ran search', 'calls still work');
@@ -612,14 +613,28 @@ test('compatibility fix removes $schema from tool schemas, logs it, and can be t
   assert.equal(fix.length, 1);
   assert.equal(fix[0].fixed, 5, '4 input schemas and 1 output schema');
   const sum = buildSummary();
-  assert.deepEqual(sum.fixes.find(f => f.server === 'draft7').fixed, 5);
+  const note = sum.fixes.find(f => f.id === 'schema-dialect');
+  assert.ok(note.servers.includes('draft7'));
+  assert.match(note.note, /Removed \$schema from \d+ tool schemas for .*draft7/);
+  assert.equal(sum.compat[0].name, 'Remove $schema from tool schemas');
   assert.equal(sum.today.calls, readEvents().filter(e => e.method === 'tools/call').length, 'fix events are not counted as calls');
 
-  setSettings({ compatFixes: false });
+  setSettings({ compat: { 'schema-dialect': false } });
   const off = await listVia('draft7-off');
   assert.equal(off.tools[0].inputSchema.$schema, 'http://json-schema.org/draft-07/schema#', 'passed through when off');
   assert.equal(readEvents().filter(e => e.method === 'compat' && e.server === 'draft7-off').length, 0);
-  setSettings({ compatFixes: true });
+  setSettings({ compat: {} });
+
+  // Older installs with the single switch off keep it off; the API only takes known fix ids.
+  assert.equal(fixList({ compatFixes: false })[0].enabled, false);
+  const server = await startServer({ port: 0 });
+  const post = body => fetch(`http://127.0.0.1:${server.address().port}/api/settings`, { method: 'POST', headers: { 'x-headroom': '1', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal((await post({ compat: { 'made-up': true } })).status, 400);
+  assert.equal((await post({ compat: { 'schema-dialect': 'yes' } })).status, 400);
+  assert.deepEqual((await (await post({ compat: { 'schema-dialect': false } })).json()).compat, { 'schema-dialect': false });
+  await post({ compat: { 'schema-dialect': true } });
+  server.close();
+  setSettings({ compat: {} });
 });
 
 test('costs are calibrated and shown per client, with how each client loads tools and its window', async () => {

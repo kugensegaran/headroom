@@ -35,6 +35,13 @@ struct Summary: Decodable {
         static let trial = License(licensed: true, mode: "trial", daysLeft: nil, trialEnds: 0, updatesUntil: nil, email: nil)
     }
 
+    struct Fix: Decodable, Identifiable {
+        let id: String
+        let name: String
+        let description: String
+        let enabled: Bool
+    }
+
     struct ClientCost: Decodable, Identifiable {
         var id: String
         let label: String
@@ -60,7 +67,7 @@ struct Summary: Decodable {
     var notifyOverBudget = false
     var notifyFailures = true
     var retentionDays = 30
-    var compatFixes = true
+    var compat: [Fix] = []
     var writeToolsOff = false
     var perClient: [ClientCost] = []
     var headlineClient: String?
@@ -68,7 +75,7 @@ struct Summary: Decodable {
 
     private enum CodingKeys: String, CodingKey {
         case paused, contextWindow, budgetPct, totalTokens, pctOfWindow, unusedTools, trimmableTokens, hasUsageData, servers, today
-        case failing, notifyOverBudget, notifyFailures, retentionDays, license, compatFixes, writeToolsOff, perClient, headlineClient
+        case failing, notifyOverBudget, notifyFailures, retentionDays, license, compat, writeToolsOff, perClient, headlineClient
     }
 
     static let empty = Summary(

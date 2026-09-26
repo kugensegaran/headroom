@@ -221,7 +221,7 @@ function renderSummary() {
   const vs = (s.perClient || []).find(c => c.id === 'vscode' && c.overLimit);
   if (vs) issues.push(['var(--orange)', `VS Code has ${vs.toolCount} MCP tools`, `Its limit is ${vs.limit} per request. <a href="#" id="vscode-profile">Use a trimmed VS Code profile</a> (keeps what VS Code used, then read-only tools).`, true]);
   const fixes = s.fixes || [];
-  if (fixes.length) issues.push(['var(--blue)', `Fixed ${fixes.reduce((n, f) => n + f.fixed, 0)} schemas for ${fixes.map(f => f.server).join(', ')}`, 'Removed $schema declarations that Claude Desktop rejects. Turn this off in Settings, Compatibility fixes.']);
+  for (const f of fixes) issues.push(['var(--blue)', f.note, `Compatibility fix "${f.name}". Turn it off in Settings.`]);
   if (s.hasUsageData && s.unusedTools) issues.push(['var(--orange)', `${s.unusedTools} tools never called`, `Trim them to save about ${k(s.trimmableTokens)} tokens per turn.`]);
   for (const c of s.clashes.slice(0, 3)) issues.push(['var(--orange)', `${c.tool} appears ${c.servers.length} times`, `${c.servers.join(', ')} all expose a tool named ${c.tool}.`]);
   if (s.headlineClient && s.pctOfWindow * 100 > s.budgetPct) issues.push(['var(--orange)', `Over budget in ${s.headlineClient}`, `Tool definitions could take up to ${Math.round(s.pctOfWindow * 100)}% of its ${k(s.contextWindow)} window.`]);
@@ -294,11 +294,13 @@ function renderSettings() {
     <label><span>Budget for MCP tools</span><select data-key="budgetPct">${opt([5, 10, 15, 20, 25, 30, 40, 50], s.budgetPct, v => v + '% of the window')}</select></label>
     <label><span>Keep call history for</span><select data-key="retentionDays">${opt([7, 14, 30, 90, 365], s.retentionDays, v => v === 365 ? '1 year' : v + ' days')}</select></label>
     <label><span>Pause logging</span><input type="checkbox" data-key="paused" ${s.paused ? 'checked' : ''}></label>
-    <label><span>Compatibility fixes <span class="sub">(remove $schema from tool schemas)</span></span><input type="checkbox" data-key="compatFixes" ${s.compatFixes ? 'checked' : ''}></label>
     <label><span>Write and delete tools off unless turned on per app</span><input type="checkbox" data-key="writeToolsOff" ${s.writeToolsOff ? 'checked' : ''}></label>
     <label><span>Notify when a server keeps failing</span><input type="checkbox" data-key="notifyFailures" ${s.notifyFailures ? 'checked' : ''}></label>
     <label><span>Notify when tools go over the budget</span><input type="checkbox" data-key="notifyOverBudget" ${s.notifyOverBudget ? 'checked' : ''}></label>
-  </div><p class="sub" style="margin-top:12px">Open at login is in the menu bar app's Settings.</p>`;
+  </div>
+  <h2 style="margin:28px 0 4px">Compatibility fixes</h2><p class="sub" style="margin:0 0 12px">Small changes Headroom makes so every server works in every app. Restart your apps after changing these.</p>
+  <div class="form">${(s.compat || []).map(f => `<label><span>${esc(f.name)}<br><span class="sub">${esc(f.description)}</span></span><input type="checkbox" data-fix="${esc(f.id)}" ${f.enabled ? 'checked' : ''}></label>`).join('')}</div>
+  <p class="sub" style="margin-top:12px">Open at login is in the menu bar app's Settings.</p>`;
 }
 
 function renderTables() {
@@ -340,6 +342,11 @@ $('q').oninput = e => { query = e.target.value.trim().toLowerCase(); renderTable
 $('go-fixes').onclick = () => document.querySelector('nav button[data-view="fixes"]').click();
 $('pause').onclick = async () => { await api('/api/pause', { paused: !summary.paused }); refresh(); };
 $('settings').addEventListener('change', async e => {
+  const fix = e.target.dataset?.fix;
+  if (fix) {
+    await api('/api/settings', { compat: { [fix]: e.target.checked } });
+    return refresh();
+  }
   const key = e.target.dataset?.key;
   if (!key) return;
   await api('/api/settings', { [key]: e.target.type === 'checkbox' ? e.target.checked : Number(e.target.value) });

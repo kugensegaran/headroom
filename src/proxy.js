@@ -5,30 +5,20 @@ import { isWriteTool, serverTokens } from './tokens.js';
 import { isLicensed } from './license.js';
 import { serverEnv } from './paths.js';
 import { clientId, toolAllowed } from './allowlist.js';
+import { FIXES, applyFixes } from './compat.js';
 
 /**
  * The part of the proxy that does not care how the server is reached.
  * Every message is passed through unchanged, except:
  *  - tools/list results are filtered to the server's allow-list (if one exists)
  *  - tools/call for a tool outside the allow-list gets a JSON-RPC error
- *  - with compatibility fixes on, tools/list results lose the `$schema` key of each
- *    inputSchema and outputSchema (Claude Desktop rejects draft-07 as an unsupported dialect)
+ *  - enabled compatibility fixes (compat.js) adjust tools/list results so every client accepts them
  * Every request/response pair is logged as one event.
  * `toServer(line)` and `toClient(line)` deliver one JSON-RPC line each way.
  */
-/** Drop `$schema` from each tool's inputSchema and outputSchema, in place. Returns how many were removed. */
+/** Kept for callers of the first version; the fix now lives in compat.js. */
 export function stripSchemaDialects(tools) {
-  let fixed = 0;
-  for (const t of tools) {
-    for (const key of ['inputSchema', 'outputSchema']) {
-      const schema = t && t[key];
-      if (schema && typeof schema === 'object' && '$schema' in schema) {
-        delete schema.$schema;
-        fixed++;
-      }
-    }
-  }
-  return fixed;
+  return FIXES.find(f => f.id === 'schema-dialect').apply(tools);
 }
 
 export function createTap({ name, toServer, toClient, stderr = process.stderr }) {
@@ -80,13 +70,14 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
       pending.delete(msg.id);
       if (req.method === 'tools/list' && Array.isArray(msg.result?.tools)) {
         const all = msg.result.tools;
-        const fixed = getSettings().compatFixes ? stripSchemaDialects(all) : 0;
+        const fixes = applyFixes(all, getSettings());
+        const fixed = fixes.length;
         saveCatalog(name, all, { tokens: serverTokens(all), source: 'proxy' });
         const allow = allowed();
         const visible = all.filter(t => allow(t.name));
         if (visible.length !== all.length) msg.result.tools = visible;
         if (visible.length !== all.length || fixed) line = JSON.stringify(msg);
-        if (fixed) log({ ts: Date.now(), method: 'compat', fix: 'schema-dialect', fixed, ms: 0, status: 'ok' });
+        for (const f of fixes) log({ ts: Date.now(), method: 'compat', fix: f.id, fixed: f.fixed, ms: 0, status: 'ok' });
       }
       const isError = !!msg.error || msg.result?.isError === true;
       if (req.method !== 'ping') {

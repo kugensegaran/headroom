@@ -57,9 +57,22 @@ struct SettingsView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             Section {
-                Toggle("Compatibility fixes", isOn: binding({ $0.compatFixes }, "compatFixes"))
+                ForEach(s.compat) { fix in
+                    Toggle(isOn: Binding(
+                        get: { fix.enabled },
+                        set: { on in Task { await engine.updateSettings(["compat": [fix.id: on]]) } }
+                    )) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(fix.name)
+                            Text(fix.description).font(.caption).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
+            } header: {
+                Text("Compatibility fixes")
             } footer: {
-                Text("Removes the $schema line from tool schemas, which Claude Desktop rejects. Everything else passes through unchanged. Restart your MCP clients after changing this.")
+                Text("Small changes Headroom makes so every server works in every app. Restart your apps after changing these.")
                     .font(.caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }

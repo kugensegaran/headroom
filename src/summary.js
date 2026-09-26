@@ -4,6 +4,7 @@ import { isWriteTool, toolTokens } from './tokens.js';
 import { clientLabel, discoverServers, knownClients } from './clients.js';
 import { LOADING, contextWindows } from './profiles.js';
 import { toolAllowed } from './allowlist.js';
+import { FIXES, fixList } from './compat.js';
 import { licenseState } from './license.js';
 
 /**
@@ -95,10 +96,9 @@ export function buildSummary({ days = 7 } = {}) {
     notifyFailures: settings.notifyFailures,
     retentionDays: settings.retentionDays,
     failing,
-    compatFixes: settings.compatFixes,
+    compat: fixList(settings),
     writeToolsOff: settings.writeToolsOff,
-    // Latest compatibility fix per server in the period, e.g. 14 schemas for filesystem.
-    fixes: Object.values(events.filter(e => e.method === 'compat').reduce((m, e) => ((m[e.server] = { server: e.server, fix: e.fix, fixed: e.fixed, ts: e.ts }), m), {})),
+    fixes: compatNotes(events),
     license: licenseState(),
     paused: settings.paused,
     contextWindow: heaviest ? heaviest.window : settings.contextWindow,
@@ -174,5 +174,19 @@ function clientCosts(servers, settings, allow) {
       windowSource: win.source,
       pctOfWindow: tokens / win.window,
     };
+  });
+}
+
+/** One line per fix for the dashboard: its latest count per server in the period, added up. */
+function compatNotes(events) {
+  const latest = {};
+  for (const e of events) if (e.method === 'compat') latest[`${e.fix}\u0000${e.server}`] = e;
+  const byFix = {};
+  for (const e of Object.values(latest)) (byFix[e.fix] ||= []).push(e);
+  return Object.entries(byFix).map(([id, list]) => {
+    const fix = FIXES.find(f => f.id === id);
+    const count = list.reduce((n, e) => n + e.fixed, 0);
+    const servers = list.map(e => e.server);
+    return { id, name: fix ? fix.name : id, fixed: count, servers, note: fix ? fix.note(count, servers) : `${id}: ${count} changes` };
   });
 }
