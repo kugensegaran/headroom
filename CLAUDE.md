@@ -2,10 +2,6 @@
 
 ## Waiting on Kugen
 
-- **M2 real-world check needs at least one local MCP server.** This Mac has none: the Figma, Claude Docs and Google Drive tools are claude.ai connectors and never touch a local config. Add one or two servers you will actually use, for example in Terminal:
-  `claude mcp add --scope user filesystem -- npx -y @modelcontextprotocol/server-filesystem ~/Documents`
-  and/or add the same entry to Claude Desktop (Settings, Developer, Edit config). Then tell Claude "servers added". Claude runs `headroom install`; you restart Claude Desktop and Claude Code, use a tool or two, and run `/context` in Claude Code so the token numbers can be compared.
-
 - **M5 Lemon Squeezy store and product.** Licensing is built and tested against a fake server; it only needs your ids.
   1. At app.lemonsqueezy.com create the store (Settings, Stores) and note its numeric **store id**.
   2. Create a product "Headroom" with one variant, single payment, price of your choice. Under the variant turn on **Generate license keys**, activation limit as you like (2 or 3 Macs is common), license length **Unlimited** (updates are limited to 12 months by the app, not by the key).
@@ -70,6 +66,7 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 
 - 2026-09-25: engine done and tested against real servers (filesystem, memory, playwright). Swift app builds and runs on this Mac (full Xcode selected, no SDK fallback). Renamed from MCP Meter to Headroom.
 - 2026-09-26: M10 repositioning done (calibrated per-app estimates, per-app tool sets, VS Code guard, named compatibility fixes, new copy, site redeployed). M2 waits only on a Claude Desktop tool call.
+- 2026-09-26 (later): M2 done. Claude Cowork tool calls go through Headroom with status ok.
 - 2026-09-25 (later): M1, M3, M4 done; M5 to M8 built and tested up to the points that need Kugen (see Waiting on Kugen). Swift tests: `cd mac && swift test`. Screenshots for QA: `open build/Headroom.app --args -show popover -appearance dark`, demo data via scripts/demo-data.js.
 
 ## Roadmap to v1.0 (development complete)
@@ -83,7 +80,7 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 
 ### M2 Real-world check on this Mac
 - [x] `node src/cli.js audit` against Kugen's real configs; fix every server that fails for a reason on our side. (2026-09-25: no local servers configured on this Mac, only claude.ai connectors, which run remotely and are out of Headroom's reach. Fixed the contradictory empty-audit message.)
-- [ ] WAITING `node src/cli.js install`; ask Kugen to restart Claude Desktop and Claude Code and use tools; confirm calls appear in the dashboard and popover. (Installed 2026-09-26 with filesystem and memory. Claude Code calls confirmed in the dashboard. Claude Desktop connects through Headroom; its tool calls failed on draft-07 schemas, so a compatibility fix now strips `$schema`. Waiting on a Desktop retest.)
+- [x] `node src/cli.js install`; ask Kugen to restart Claude Desktop and Claude Code and use tools; confirm calls appear in the dashboard and popover. (Installed 2026-09-26 with filesystem and memory. Claude Code calls confirmed in the dashboard. Claude Desktop tool calls failed on draft-07 schemas, so a compatibility fix now strips `$schema`. Retest 2026-09-26: Claude Cowork called filesystem list_allowed_directories and memory read_graph, both ok in the event log, with the schema-dialect fix applied to tools/list.)
 - [x] Sanity-check token estimates: compare one server's total against the client's own context readout (Claude Code `/context`). Note the gap in docs/ACCURACY.md. (2026-09-26: Claude Code counts 1.85 to 1.89 times Headroom's estimate; Claude Code also defers MCP tools. Calibration proposal in docs/ACCURACY.md, needs Kugen's call.)
 
 ### M3 Engine completeness
