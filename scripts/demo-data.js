@@ -2,6 +2,7 @@
 // Fill a data folder with the demo numbers from the Figma frames, for screenshots and QA.
 //   HEADROOM_HOME=/tmp/headroom-demo node scripts/demo-data.js
 //   HEADROOM_HOME=/tmp/headroom-demo node src/cli.js serve --port 7790
+// --calm: no failing server, no unused or clashing tools, for the website shot.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -13,6 +14,7 @@ const { saveCatalog, appendEvent, setSettings } = await import('../src/store.js'
 const { toolTokens } = await import('../src/tokens.js');
 const { paths } = await import('../src/paths.js');
 
+const calm = process.argv.includes('--calm');
 const servers = [
   { name: 'GitHub', tokens: 26000, tools: ['list_pull_requests', 'create_issue', 'get_file_contents', 'search_code', 'search', 'get_pull_request'], total: 35 },
   { name: 'Slack', tokens: 21000, tools: ['post_message', 'list_channels', 'search'], total: 11 },
@@ -25,6 +27,13 @@ const filler = 'Returns the matching records for the given filters, with paging 
 
 for (const dir of [paths.events(), paths.catalog()]) for (const f of fs.readdirSync(dir)) fs.rmSync(path.join(dir, f));
 setSettings({ paused: false, contextWindow: 200000, budgetPct: 20 });
+
+if (calm) {
+  for (const s of servers) {
+    if (s.name !== 'Notion') s.tools = s.tools.filter(t => t !== 'search');
+    s.total = s.tools.length;
+  }
+}
 
 for (const s of servers) {
   const names = [...s.tools];
@@ -52,8 +61,13 @@ for (let ts = start.getTime(); ts < now.getTime(); ts += 20000 + ((n * 7919) % 2
   }
   const s = servers[(n * 13) % servers.length];
   const tool = s.tools[Math.floor(n / servers.length) % s.tools.length];
-  const slackDown = s.name === 'Slack' && ts > now.getTime() - 30 * 60000;
-  appendEvent({ ts, server: s.name, client: clients[n % 3], method: 'tools/call', tool, ms: s.name === 'Filesystem' ? 5 : 90 + ((n * 37) % 900), reqBytes: 200, resBytes: 800 + ((n * 97) % 20000), status: slackDown ? 'error' : 'ok', write: /create|update|post|write|move/.test(tool) });
+  const slackDown = !calm && s.name === 'Slack' && ts > now.getTime() - 30 * 60000;
+  appendEvent({ ts, server: s.name, client: clients[n % 3], method: 'tools/call', tool, ms: s.name === 'Filesystem' ? 5 : 90 + ((n * 37) % (calm ? 400 : 900)), reqBytes: 200, resBytes: 800 + ((n * 97) % 20000), status: slackDown ? 'error' : 'ok', write: /create|update|post|write|move/.test(tool) });
   n++;
 }
+// Claude Desktop rejects draft-07 schemas; the compatibility fix strips them when it lists tools.
+for (const [server, fixed] of [['GitHub', 35], ['Filesystem', 11]]) {
+  appendEvent({ ts: start.getTime() + 60000, server, client: 'claude-ai', method: 'compat', fix: 'schema-dialect', fixed, ms: 0, status: 'ok' });
+}
+
 console.log(`Demo data written to ${process.env.HEADROOM_HOME}`);

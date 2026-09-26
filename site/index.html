@@ -42,8 +42,8 @@ nav.top a:not(.brand):not(.btn) { color: var(--text); opacity: .8; }
 .hero .ctas { display: flex; gap: 24px; justify-content: center; align-items: center; flex-wrap: wrap; }
 
 .shot { margin: 24px auto 0; max-width: 1040px; padding: 0 22px; }
-.shot .desk { background: var(--shot); border-radius: 18px; padding: 56px 24px; display: flex; justify-content: center; }
-.shot img { width: 340px; max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.15); }
+.shot .desk { background: var(--shot); border-radius: 18px; padding: 40px 24px; display: flex; justify-content: center; }
+.shot img { width: 100%; max-width: 960px; height: auto; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.22), 0 0 0 .5px rgba(0,0,0,.15); }
 
 section.audit { background: var(--bg2); padding: 96px 0; margin-top: 96px; }
 section h2 { font-size: clamp(32px, 4.5vw, 48px); line-height: 1.08; letter-spacing: -.01em; margin: 0 0 10px; text-align: center; }
@@ -73,8 +73,8 @@ textarea:focus { outline: 2px solid var(--blue); }
 .features h3 { font-size: 17px; margin: 10px 0 4px; }
 .features p { font-size: 14px; color: var(--text2); margin: 0; }
 
-.pricing { background: var(--bg2); border-radius: 18px; text-align: center; padding: 64px 24px; margin-bottom: 96px; }
-.pricing .small { font-size: 13px; color: var(--text2); margin-top: 18px; }
+.oss { background: var(--bg2); border-radius: 18px; text-align: center; padding: 64px 24px; margin-bottom: 96px; }
+.oss .small { font-size: 13px; color: var(--text2); margin-top: 18px; }
 
 footer { border-top: .5px solid var(--line); font-size: 12px; color: var(--text2); }
 footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding: 24px 22px; flex-wrap: wrap; }
@@ -93,8 +93,8 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
     <a class="brand" href="#"><img src="icon.png" alt="">Headroom</a>
     <a class="hide-sm" href="#audit">Free audit</a>
     <a class="hide-sm" href="#features">Features</a>
-    <a class="hide-sm" href="#pricing">Pricing</a>
-    <a class="btn small buy" href="#pricing">Buy</a>
+    <a class="hide-sm" href="https://github.com/kugensegaran/headroom">GitHub</a>
+    <a class="btn small" href="https://github.com/kugensegaran/headroom/releases/latest">Download</a>
   </div>
 </nav>
 
@@ -103,7 +103,8 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
   <h1>Every MCP server,<br>working in every client.</h1>
   <p class="lede">See every call. Headroom sits between your apps and your MCP servers, smooths over what one app would reject, and gives each app the tools it should have.</p>
   <div class="ctas">
-    <a class="btn buy" id="buy-hero" href="#pricing">Buy</a>
+    <a class="btn" href="https://github.com/kugensegaran/headroom/releases/latest">Download</a>
+    <a href="https://github.com/kugensegaran/headroom">View on GitHub ›</a>
     <a href="#audit">Try the free audit ›</a>
   </div>
 </header>
@@ -111,8 +112,8 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
 <div class="shot">
   <div class="desk">
     <picture>
-      <source srcset="popover-dark.png" media="(prefers-color-scheme: dark)">
-      <img src="popover-light.png" alt="The Headroom menu bar popover: six MCP servers with their estimated tool definition size, how each app loads them, and today's calls." width="340" height="656">
+      <source srcset="dashboard-dark.png" media="(prefers-color-scheme: dark)">
+      <img src="dashboard-light.png" alt="The Headroom dashboard: a compatibility fix that removed $schema from 46 tool schemas so they work in Claude, and today's calls from Claude, Claude Code and Cursor streaming in live, none failed." width="1600" height="950">
     </picture>
   </div>
 </div>
@@ -164,44 +165,31 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
     </div>
   </section>
 
-  <section class="pricing" id="pricing">
-    <h2>Pay once. Keep it.</h2>
-    <p class="sub" id="price-line" style="margin-bottom:28px">One payment. No account. Try everything free for 14 days.</p>
-    <a class="btn buy" id="buy-main" href="#pricing">Buy Headroom</a>
-    <p class="small">12 months of updates included · keeps working after that · 14-day refund · macOS 14 or later</p>
+  <section class="oss" id="download">
+    <h2>Free and open source.</h2>
+    <p class="sub" style="margin-bottom:28px">Every feature, for everyone. No account. MIT licensed, so you can read every line.</p>
+    <div class="ctas" style="display:flex; gap:24px; justify-content:center; align-items:center; flex-wrap:wrap">
+      <a class="btn" href="https://github.com/kugensegaran/headroom/releases/latest">Download Headroom</a>
+      <a href="https://github.com/kugensegaran/headroom">View on GitHub ›</a>
+    </div>
+    <p class="small">macOS 14 or later</p>
   </section>
 </div>
 
 <footer>
   <div class="wrap">
     <span>Headroom. Not affiliated with Anthropic or the MCP project.</span>
-    <span><a href="privacy.html">Privacy</a> · <a href="privacy.html#refunds">Refunds</a><span id="contact"></span></span>
+    <span><a href="privacy.html">Privacy</a> · <a href="https://github.com/kugensegaran/headroom">GitHub</a></span>
   </div>
 </footer>
 
 <script type="module">
-// Filled in at launch. While null, buy buttons say "Coming soon".
-const STORE = { price: null, checkoutUrl: null, contactEmail: null };
-
 import { audit, withoutServers } from './audit.js';
 
 const COLORS = ['--c1', '--c2', '--c3', '--c4', '--c5', '--c6'].map(v => `var(${v})`);
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const k = n => (n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : String(n));
-
-for (const a of document.querySelectorAll('.buy')) {
-  if (STORE.checkoutUrl) {
-    a.href = STORE.checkoutUrl;
-    if (a.id === 'buy-hero' && STORE.price) a.textContent = `Buy for ${STORE.price}`;
-  } else if (a.id !== 'buy-hero' && !a.classList.contains('small')) {
-    a.textContent = 'Coming soon';
-    a.setAttribute('aria-disabled', 'true');
-    a.removeAttribute('href');
-  }
-}
-if (STORE.price) $('price-line').textContent = `${STORE.price}, one time. No account. Try everything free for 14 days.`;
-if (STORE.contactEmail) $('contact').innerHTML = ` · <a href="mailto:${esc(STORE.contactEmail)}">Contact</a>`;
 
 let catalog = null;
 const loadCatalog = async () => (catalog ||= await (await fetch('catalog.json')).json());
