@@ -8,6 +8,8 @@ const tools = [
   { name: 'delete_item', description: 'Delete an item permanently', inputSchema: { type: 'object', properties: { id: { type: 'string' } } } },
   { name: 'fail', description: 'Always errors', inputSchema: { type: 'object' } },
 ];
+// FAKE_TOOLS=N adds N extra read tools, for tool-limit tests.
+for (let i = 0; i < Number(process.env.FAKE_TOOLS || 0); i++) tools.push({ name: `lookup_${i}`, description: `Look up thing ${i}`, inputSchema: { type: 'object' } });
 // FAKE_SCHEMA=draft-07 makes every schema declare its dialect, like the reference servers do.
 if (process.env.FAKE_SCHEMA) {
   const dialect = process.env.FAKE_SCHEMA === 'draft-07' ? 'http://json-schema.org/draft-07/schema#' : process.env.FAKE_SCHEMA;

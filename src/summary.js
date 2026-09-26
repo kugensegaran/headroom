@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import { getAllowlist, getSettings, readCatalogs, readEvents } from './store.js';
 import { isWriteTool, toolTokens } from './tokens.js';
 import { clientLabel, discoverServers, knownClients } from './clients.js';
@@ -125,10 +126,17 @@ export function buildSummary({ days = 7 } = {}) {
   };
 }
 
-let discovered = { at: 0, value: [] };
-/** Config files are re-read at most every 10 seconds; the app polls the summary every 3. */
+let discovered = { key: null, value: [] };
+/** Re-read client configs only when one of them changed; the app polls the summary every 3 seconds. */
 function cachedDiscover() {
-  if (Date.now() - discovered.at > 10000) discovered = { at: Date.now(), value: discoverServers() };
+  const key = knownClients().map(c => {
+    try {
+      return fs.statSync(c.file).mtimeMs;
+    } catch {
+      return 0;
+    }
+  }).join('|');
+  if (key !== discovered.key) discovered = { key, value: discoverServers() };
   return discovered.value;
 }
 

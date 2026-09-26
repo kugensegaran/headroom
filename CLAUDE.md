@@ -129,7 +129,7 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 Positioning: "Every MCP server, working in every client. See every call." Never claim that tools always eat your context.
 - [x] Token figures calibrated (x1.87 against Claude Code `/context`, see docs/ACCURACY.md) and labelled "estimated" everywhere. Cost shown per client with how that client loads tools: Claude Code on demand (verified with `/context`), Cursor on demand (Cursor docs, dynamic context discovery), VS Code every turn up to 128 tools, Claude Desktop "not verified" until checked. Context window read from the client where possible (Claude Code: model of the latest session) instead of assuming 200K. Tests.
 - [x] Allow-lists per client: each client can get its own tool set (proxy knows the client from `initialize`). Write and delete tools off by default on new installs; existing installs keep everything on. Dashboard lets you turn tools on per client. Trim works per client. Tests.
-- [ ] VS Code guard: warn when VS Code's MCP tools pass 128, and offer a trimmed VS Code profile (used tools first, then read-only ones, capped at 128). Tests.
+- [x] VS Code guard: warn when VS Code's MCP tools pass 128, and offer a trimmed VS Code profile (used tools first, then read-only ones, capped at 128). Tests.
 - [ ] Compatibility fixes as a named list in Settings (app and dashboard), starting with "Remove $schema from tool schemas" (draft-07, Claude Desktop). Each fix is a small module with an id, name, description and apply function, so new ones slot in. Tests.
 - [ ] Copy rewrite around the new positioning: website, popover, onboarding, README. Remove every claim that tools always eat your context. Redeploy the site.
 

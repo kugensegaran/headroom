@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { eventFile, getAllowlist, getSettings, pruneEvents, readEvents, setSettings } from './store.js';
 import { CLIENT_IDS, setToolList } from './allowlist.js';
 import { buildSummary } from './summary.js';
-import { applyTrim, planTrim, resetTrim } from './trim.js';
+import { applyTrim, applyVsCodeProfile, planTrim, planVsCodeProfile, resetTrim } from './trim.js';
 import { runAudit } from './audit.js';
 import { clientsReport } from './install.js';
 import { ensureTrialStarted, licenseState, writeLicense } from './license.js';
@@ -112,6 +112,12 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
       if (req.method === 'POST' && url.pathname === '/api/trim') {
         const body = await readBody(req);
         return send(res, 200, applyTrim({ days: body.days || 7, includeIdle: !!body.includeIdle }));
+      }
+      if (req.method === 'GET' && url.pathname === '/api/profile/vscode') {
+        return send(res, 200, planVsCodeProfile());
+      }
+      if (req.method === 'POST' && url.pathname === '/api/profile/vscode') {
+        return send(res, 200, applyVsCodeProfile());
       }
       if (req.method === 'GET' && url.pathname === '/api/allowlist') {
         return send(res, 200, { allowlist: getAllowlist(), writeToolsOff: getSettings().writeToolsOff, clients: CLIENT_IDS });

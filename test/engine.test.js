@@ -701,3 +701,33 @@ test('per-client tool sets; new installs start with write tools off', async () =
   execFileSync(process.execPath, [CLI, 'audit'], { env: { ...process.env, HEADROOM_HOME: path.join(fresh, 'data'), HEADROOM_USER_HOME: path.join(fresh, 'home') } });
   assert.equal(JSON.parse(fs.readFileSync(path.join(fresh, 'data', 'settings.json'), 'utf8')).writeToolsOff, true);
 });
+
+test('VS Code guard: flags more than 128 tools and trims VS Code alone', async () => {
+  const { planVsCodeProfile, applyVsCodeProfile } = await import('../src/trim.js');
+  const { toolAllowed } = await import('../src/allowlist.js');
+  const { setAllowlist: setAllow, appendEvent } = await import('../src/store.js');
+  const vscode = knownClients().find(c => c.id === 'vscode');
+  fs.mkdirSync(path.dirname(vscode.file), { recursive: true });
+  fs.writeFileSync(vscode.file, JSON.stringify({ servers: {
+    big: { type: 'stdio', command: process.execPath, args: [FAKE], env: { FAKE_TOOLS: '90' } },
+    big2: { type: 'stdio', command: process.execPath, args: [FAKE], env: { FAKE_TOOLS: '60' } },
+  } }));
+  const audit = await runAudit({ only: ['big', 'big2'] });
+  assert.ok(audit.every(r => r.ok), JSON.stringify(audit));
+  appendEvent({ ts: Date.now(), server: 'big2', client: 'Visual Studio Code', method: 'tools/call', tool: 'delete_item', ms: 3, status: 'ok' });
+
+  const vs = buildSummary().perClient.find(c => c.id === 'vscode');
+  assert.equal(vs.toolCount, 158);
+  assert.equal(vs.overLimit, true);
+  const plan = planVsCodeProfile();
+  assert.deepEqual([plan.total, plan.keep, plan.dropped], [158, 128, 30]);
+  assert.ok(plan.lists.big2.includes('delete_item'), 'a write tool VS Code used is kept');
+  assert.ok(!plan.lists.big.includes('delete_item'), 'unused write tools go first');
+
+  applyVsCodeProfile();
+  assert.equal(buildSummary().perClient.find(c => c.id === 'vscode').overLimit, false);
+  assert.equal(toolAllowed({ server: 'big', client: 'vscode', tool: 'delete_item' }), false);
+  assert.equal(toolAllowed({ server: 'big', client: 'cursor', tool: 'delete_item' }), true, 'other apps untouched');
+  setAllow({});
+  fs.rmSync(vscode.file);
+});

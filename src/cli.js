@@ -3,7 +3,7 @@ import { runProxy } from './proxy.js';
 import { bridgeOptions, runBridge } from './bridge.js';
 import { runAudit } from './audit.js';
 import { applyInstall } from './install.js';
-import { applyTrim, planTrim, resetTrim } from './trim.js';
+import { applyTrim, applyVsCodeProfile, planTrim, planVsCodeProfile, resetTrim } from './trim.js';
 import { buildSummary } from './summary.js';
 import { startServer } from './server.js';
 import { dataDir } from './paths.js';
@@ -18,7 +18,7 @@ Usage:
   headroom status [--json]              Context cost, usage and issues from the latest data
   headroom install [--dry-run]          Route servers in Claude, Claude Code, Cursor, VS Code through the proxy
   headroom uninstall                    Put every client config back to direct connections
-  headroom trim [--days N] [--apply] [--include-idle] [--reset [server]]
+  headroom trim [--days N] [--apply] [--include-idle] [--reset [server]] [--vscode]
                                         Keep only the tools you used in the last N days (default 7)
   headroom doctor [--fix] [--json]      Check Node, configs and wrapped entries; --fix repairs broken paths
   headroom serve [--port 7777] [--parent-pid PID]
@@ -138,6 +138,12 @@ async function main() {
         const server = argv[argv.indexOf('--reset') + 1];
         resetTrim(server && !server.startsWith('--') ? server : undefined);
         return console.log('Allow-list cleared. All tools are back on.');
+      }
+      if (flag('--vscode')) {
+        const p = flag('--apply') ? applyVsCodeProfile() : planVsCodeProfile();
+        console.log(p.total <= p.limit ? `VS Code has ${p.total} MCP tools, within its ${p.limit}-tool limit.` : `VS Code has ${p.total} MCP tools. The profile keeps ${p.keep} (tools it used, then read-only ones) and turns off ${p.dropped}.`);
+        console.log(flag('--apply') ? 'Applied for VS Code only. Restart VS Code to reload tool lists.' : 'Dry run. Add --apply to use this profile in VS Code.');
+        return;
       }
       const days = Number(opt('--days', 7));
       const includeIdle = flag('--include-idle');
