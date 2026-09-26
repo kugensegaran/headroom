@@ -2,6 +2,7 @@ import { getAllowlist, getSettings, readCatalogs, readEvents } from './store.js'
 import { isWriteTool, toolTokens } from './tokens.js';
 import { clientLabel, discoverServers, knownClients } from './clients.js';
 import { LOADING, contextWindows } from './profiles.js';
+import { toolAllowed } from './allowlist.js';
 import { licenseState } from './license.js';
 
 /**
@@ -26,13 +27,13 @@ export function buildSummary({ days = 7 } = {}) {
 
   const toolOwners = {};
   const servers = catalogs.map(c => {
-    const list = Array.isArray(allow[c.server]) ? new Set(allow[c.server]) : null;
     const tools = c.tools.map(t => ({
       name: t.name,
       tokens: toolTokens(t),
       write: isWriteTool(t.name),
       used: usedBy[c.server]?.has(t.name) || false,
-      enabled: list ? list.has(t.name) : true,
+      // As a client without its own list sees it; per-client views are in perClient.
+      enabled: toolAllowed({ allow, settings, server: c.server, client: '*', tool: t.name }),
     }));
     for (const t of tools) (toolOwners[t.name] ||= []).push(c.server);
     const enabled = tools.filter(t => t.enabled);
@@ -48,7 +49,7 @@ export function buildSummary({ days = 7 } = {}) {
       trimmable: tools.some(t => t.used) ? tools.filter(t => t.enabled && !t.used).reduce((s, t) => s + t.tokens, 0) : 0,
       idle: !tools.some(t => t.used),
       writeTools: tools.filter(t => t.write).map(t => t.name),
-      allowlisted: !!list,
+      allowlisted: !!allow[c.server],
       tools,
     };
   });
@@ -63,7 +64,7 @@ export function buildSummary({ days = 7 } = {}) {
   const median = latencies.length ? latencies[Math.floor(latencies.length / 2)] : null;
   const failed = calls.filter(e => e.status === 'error').length;
   const totalTokens = servers.reduce((s, x) => s + x.tokens, 0);
-  const perClient = clientCosts(servers, settings);
+  const perClient = clientCosts(servers, settings, allow);
   // The headline percentage only counts clients that may send every definition every turn.
   const heaviest = perClient.filter(c => c.loading !== 'on-demand').sort((a, b) => b.pctOfWindow - a.pctOfWindow)[0] || null;
   const hours = new Array(24).fill(0);
@@ -94,6 +95,7 @@ export function buildSummary({ days = 7 } = {}) {
     retentionDays: settings.retentionDays,
     failing,
     compatFixes: settings.compatFixes,
+    writeToolsOff: settings.writeToolsOff,
     // Latest compatibility fix per server in the period, e.g. 14 schemas for filesystem.
     fixes: Object.values(events.filter(e => e.method === 'compat').reduce((m, e) => ((m[e.server] = { server: e.server, fix: e.fix, fixed: e.fixed, ts: e.ts }), m), {})),
     license: licenseState(),
@@ -137,15 +139,16 @@ function cachedWindows(settingsWindow) {
 }
 
 /** What each client's configured servers cost, and how that client loads them. */
-function clientCosts(servers, settings) {
+function clientCosts(servers, settings, allow) {
   const byClient = {};
   for (const s of cachedDiscover()) (byClient[s.client] ||= new Set()).add(s.name);
   const wins = cachedWindows(settings.contextWindow);
   const labels = Object.fromEntries(knownClients().map(c => [c.id, c.label]));
   return Object.entries(byClient).map(([id, names]) => {
     const list = servers.filter(x => names.has(x.name));
-    const tokens = list.reduce((n, x) => n + x.tokens, 0);
-    const toolCount = list.reduce((n, x) => n + x.enabledCount, 0);
+    const on = list.flatMap(x => x.tools.filter(t => toolAllowed({ allow, settings, server: x.name, client: id, tool: t.name })));
+    const tokens = on.reduce((n, t) => n + t.tokens, 0);
+    const toolCount = on.length;
     const profile = LOADING[id] || { loading: 'unverified', source: 'Not checked yet' };
     const win = wins[id] || { window: settings.contextWindow, source: 'Settings' };
     return {

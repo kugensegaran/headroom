@@ -50,6 +50,13 @@ struct SettingsView: View {
                     }))
             }
             Section {
+                Toggle("Write and delete tools off by default", isOn: binding({ $0.writeToolsOff }, "writeToolsOff"))
+            } footer: {
+                Text("Tools that change or delete things stay off until you turn them on for an app in the dashboard, under Servers.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Section {
                 Toggle("Compatibility fixes", isOn: binding({ $0.compatFixes }, "compatFixes"))
             } footer: {
                 Text("Removes the $schema line from tool schemas, which Claude Desktop rejects. Everything else passes through unchanged. Restart your MCP clients after changing this.")

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { dataDir, ensureDir } from './paths.js';
+import { dataDir, ensureDir, paths } from './paths.js';
+import { setSettings } from './store.js';
 
 export const TRIAL_DAYS = 14;
 export const GRACE_DAYS = 30;
@@ -33,7 +34,10 @@ export function writeLicense(patch) {
 /** Start the trial clock the first time Headroom runs. */
 export function ensureTrialStarted(now = Date.now()) {
   const l = readLicense();
-  if (!l.trialStart) writeLicense({ trialStart: now });
+  if (l.trialStart) return;
+  // A brand new install: start with write and delete tools off. Existing installs keep everything on.
+  if (!fs.existsSync(paths.settings())) setSettings({ writeToolsOff: true });
+  writeLicense({ trialStart: now });
 }
 
 /**

@@ -61,13 +61,14 @@ struct Summary: Decodable {
     var notifyFailures = true
     var retentionDays = 30
     var compatFixes = true
+    var writeToolsOff = false
     var perClient: [ClientCost] = []
     var headlineClient: String?
     var license: License = .trial
 
     private enum CodingKeys: String, CodingKey {
         case paused, contextWindow, budgetPct, totalTokens, pctOfWindow, unusedTools, trimmableTokens, hasUsageData, servers, today
-        case failing, notifyOverBudget, notifyFailures, retentionDays, license, compatFixes, perClient, headlineClient
+        case failing, notifyOverBudget, notifyFailures, retentionDays, license, compatFixes, writeToolsOff, perClient, headlineClient
     }
 
     static let empty = Summary(

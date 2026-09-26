@@ -143,7 +143,7 @@ async function main() {
       const includeIdle = flag('--include-idle');
       const plan = flag('--apply') ? applyTrim({ days, includeIdle }) : planTrim({ days, includeIdle });
       for (const c of plan.changes) {
-        console.log(c.action === 'trim' ? `${c.server}: keep ${c.keep} of ${c.of} tools, saves ${k(c.savedTokens)} tokens` : `${c.server}: skipped (${c.reason})`);
+        console.log(c.action === 'trim' ? `${c.server} in ${c.clientLabel}: keep ${c.keep} of ${c.of} tools, saves about ${k(c.savedTokens)} tokens` : `${c.server}: skipped (${c.reason})`);
       }
       console.log(`\nTotal saving: about ${k(plan.savedTokens)} tokens per turn.`);
       console.log(flag('--apply') ? 'Applied. Restart your MCP clients to reload tool lists.' : 'Dry run. Add --apply to turn the unused tools off.');

@@ -1,6 +1,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
-import { eventFile, getSettings, pruneEvents, readEvents, setSettings } from './store.js';
+import { eventFile, getAllowlist, getSettings, pruneEvents, readEvents, setSettings } from './store.js';
+import { CLIENT_IDS, setToolList } from './allowlist.js';
 import { buildSummary } from './summary.js';
 import { applyTrim, planTrim, resetTrim } from './trim.js';
 import { runAudit } from './audit.js';
@@ -112,6 +113,15 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
         const body = await readBody(req);
         return send(res, 200, applyTrim({ days: body.days || 7, includeIdle: !!body.includeIdle }));
       }
+      if (req.method === 'GET' && url.pathname === '/api/allowlist') {
+        return send(res, 200, { allowlist: getAllowlist(), writeToolsOff: getSettings().writeToolsOff, clients: CLIENT_IDS });
+      }
+      if (req.method === 'POST' && url.pathname === '/api/allowlist') {
+        const body = await readBody(req);
+        if (typeof body.server !== 'string' || typeof body.client !== 'string') return send(res, 400, { error: 'server and client are required' });
+        if (body.tools !== null && !(Array.isArray(body.tools) && body.tools.every(t => typeof t === 'string'))) return send(res, 400, { error: 'tools must be a list of names, or null to clear' });
+        return send(res, 200, { allowlist: setToolList(body.server, body.client, body.tools) });
+      }
       if (req.method === 'POST' && url.pathname === '/api/trim/reset') {
         const body = await readBody(req);
         resetTrim(body.server);
@@ -157,6 +167,7 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
         if ('notifyOverBudget' in body) patch.notifyOverBudget = !!body.notifyOverBudget;
         if ('notifyFailures' in body) patch.notifyFailures = !!body.notifyFailures;
         if ('compatFixes' in body) patch.compatFixes = !!body.compatFixes;
+        if ('writeToolsOff' in body) patch.writeToolsOff = !!body.writeToolsOff;
         const next = setSettings(patch);
         if ('retentionDays' in patch) pruneEvents();
         return send(res, 200, next);

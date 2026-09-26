@@ -98,7 +98,7 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 .form { display: flex; flex-direction: column; max-width: 520px; border: .5px solid var(--line); border-radius: 8px; }
 .form label { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; font-size: 13px; }
 .form label + label { border-top: .5px solid var(--line); }
-.form select { font: inherit; font-size: 13px; color: var(--text); background: var(--fill); border: .5px solid var(--line); border-radius: 5px; padding: 3px 6px; }
+#view-client, .form select { font: inherit; font-size: 13px; color: var(--text); background: var(--fill); border: .5px solid var(--line); border-radius: 5px; padding: 3px 6px; }
 .form input[type=checkbox] { accent-color: var(--blue); width: 14px; height: 14px; }
 .toolbar.plain .seg, .toolbar.plain .search { visibility: hidden; }
 </style>
@@ -225,20 +225,43 @@ function renderSummary() {
   if (s.headlineClient && s.pctOfWindow * 100 > s.budgetPct) issues.push(['var(--orange)', `Over budget in ${s.headlineClient}`, `Tool definitions could take up to ${Math.round(s.pctOfWindow * 100)}% of its ${k(s.contextWindow)} window.`]);
   $('issues').innerHTML = issues.map(([c, t, b]) => `<div class="issue"><span class="dot" style="background:${c}"></span><div><b>${esc(t)}</b><span>${esc(b)}</span></div></div>`).join('') || '<div class="sub">Nothing needs attention.</div>';
   $('pause').textContent = s.paused ? 'Resume' : 'Pause';
-  renderServers();
+  if (document.querySelector('nav button[data-view="servers"]').getAttribute('aria-current')) renderServers();
 }
 
-function renderServers() {
+let allow = { allowlist: {}, writeToolsOff: false, clients: {} };
+let viewClient = '*';
+const isWrite = t => t.write;
+function listFor(server, client) {
+  const e = allow.allowlist[server];
+  if (Array.isArray(e)) return e;
+  if (e && typeof e === 'object') return e[client] || e['*'] || null;
+  return null;
+}
+function toolOn(server, client, tool) {
+  const list = listFor(server, client);
+  return list ? list.includes(tool.name) : !(allow.writeToolsOff && isWrite(tool));
+}
+
+async function renderServers() {
   const s = summary;
-  $('servers').innerHTML = s.servers.map(x => `<details class="server"><summary><span class="dot" style="background:${colorOf[x.name]}"></span><span class="name">${esc(x.name)}</span>${x.allowlisted ? '<span class="pill">trimmed</span>' : ''}<span class="sub">${x.enabledCount}/${x.toolCount} tools on · ${x.usedCount} used · ${x.tokens.toLocaleString()} tokens</span>${x.allowlisted ? `<button class="btn plain" data-reset="${esc(x.name)}">Turn all on</button>` : ''}</summary>
-    <table><thead><tr><th>Tool</th><th class="num">Tokens</th><th>Used (7d)</th><th>State</th></tr></thead><tbody>${x.tools.slice().sort((a, b) => b.tokens - a.tokens).map(t => `<tr><td class="mono">${esc(t.name)}${t.write ? ' <span class="pill warn">write</span>' : ''}</td><td class="num">${t.tokens}</td><td>${t.used ? 'Yes' : '<span class="sub">No</span>'}</td><td>${t.enabled ? 'On' : '<span class="sub">Off</span>'}</td></tr>`).join('')}</tbody></table></details>`).join('') || '<div class="empty">No servers measured yet. Run <code>headroom audit</code>.</div>';
+  allow = await api('/api/allowlist');
+  const picker = `<label class="sub" style="display:flex;gap:8px;align-items:center;margin-bottom:14px">Tools for
+    <select id="view-client">${[['*', 'every app (default)'], ...Object.entries(allow.clients)].map(([id, label]) => `<option value="${id}" ${id === viewClient ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select></label>
+    ${allow.writeToolsOff ? '<p class="sub" style="margin:-6px 0 14px">Write and delete tools start off. Turn them on per app here, or in Settings.</p>' : ''}`;
+  $('servers').innerHTML = picker + (s.servers.map(x => {
+    const on = x.tools.filter(t => toolOn(x.name, viewClient, t)).length;
+    const own = (() => { const e = allow.allowlist[x.name]; return Array.isArray(e) ? viewClient === '*' : !!(e && e[viewClient]); })();
+    return `<details class="server"><summary><span class="dot" style="background:${colorOf[x.name]}"></span><span class="name">${esc(x.name)}</span>${own ? '<span class="pill">custom</span>' : ''}<span class="sub">${on}/${x.toolCount} tools on · ${x.usedCount} used · ${x.tokensAll.toLocaleString()} tokens, estimated</span>${own ? `<button class="btn plain" data-reset="${esc(x.name)}">Use default</button>` : ''}</summary>
+    <table><thead><tr><th>Tool</th><th class="num">Est. tokens</th><th>Used (7d)</th><th>On</th></tr></thead><tbody>${x.tools.slice().sort((a, b) => b.tokens - a.tokens).map(t => `<tr><td class="mono">${esc(t.name)}${t.write ? ' <span class="pill warn">write</span>' : ''}</td><td class="num">${t.tokens}</td><td>${t.used ? 'Yes' : '<span class="sub">No</span>'}</td><td><input type="checkbox" data-server="${esc(x.name)}" data-tool="${esc(t.name)}" ${toolOn(x.name, viewClient, t) ? 'checked' : ''} aria-label="${esc(t.name)} on"></td></tr>`).join('')}</tbody></table></details>`;
+  }).join('') || '<div class="empty">No servers measured yet. Run <code>headroom audit</code>.</div>');
+  $('view-client').onchange = e => { viewClient = e.target.value; renderServers(); };
 }
 
 async function renderFixes() {
   const plan = await api('/api/trim/plan?days=7');
   const trims = plan.changes.filter(c => c.action === 'trim' && c.savedTokens > 0);
-  $('fixes').innerHTML = `<h2>Trim unused tools</h2><p class="sub" style="margin:6px 0 14px">Keeps only the tools each server was asked to run in the last 7 days. Servers with no calls are left alone. You can turn everything back on from Servers.</p>
-    ${trims.length ? `<table><thead><tr><th>Server</th><th class="num">Keep</th><th class="num">Saves</th></tr></thead><tbody>${trims.map(c => `<tr><td>${esc(c.server)}</td><td class="num">${c.keep} of ${c.of}</td><td class="num">${k(c.savedTokens)} tokens</td></tr>`).join('')}</tbody></table>
+  $('fixes').innerHTML = `<h2>Trim unused tools</h2><p class="sub" style="margin:6px 0 14px">Keeps only the tools each app asked each server to run in the last 7 days. An app that never called a server keeps all of its tools. You can turn tools back on per app from Servers.</p>
+    ${trims.length ? `<table><thead><tr><th>Server</th><th>App</th><th class="num">Keep</th><th class="num">Saves, est.</th></tr></thead><tbody>${trims.map(c => `<tr><td>${esc(c.server)}</td><td>${esc(c.clientLabel || 'every app')}</td><td class="num">${c.keep} of ${c.of}</td><td class="num">${k(c.savedTokens)} tokens</td></tr>`).join('')}</tbody></table>
     <div style="margin-top:16px; display:flex; gap:12px; align-items:center"><button class="btn" id="apply-trim">Trim and save ${k(plan.savedTokens)} tokens</button><span class="sub">Restart your MCP clients afterwards.</span></div>` : `<div class="empty">${summary.hasUsageData ? 'Nothing to trim yet.' : 'Needs a few days of usage first.'}</div>`}`;
   const btn = $('apply-trim');
   if (btn) btn.onclick = async () => { btn.disabled = true; await api('/api/trim', { days: 7 }); await refresh(); renderFixes(); };
@@ -261,6 +284,7 @@ function renderSettings() {
     <label><span>Keep call history for</span><select data-key="retentionDays">${opt([7, 14, 30, 90, 365], s.retentionDays, v => v === 365 ? '1 year' : v + ' days')}</select></label>
     <label><span>Pause logging</span><input type="checkbox" data-key="paused" ${s.paused ? 'checked' : ''}></label>
     <label><span>Compatibility fixes <span class="sub">(remove $schema from tool schemas)</span></span><input type="checkbox" data-key="compatFixes" ${s.compatFixes ? 'checked' : ''}></label>
+    <label><span>Write and delete tools off unless turned on per app</span><input type="checkbox" data-key="writeToolsOff" ${s.writeToolsOff ? 'checked' : ''}></label>
     <label><span>Notify when a server keeps failing</span><input type="checkbox" data-key="notifyFailures" ${s.notifyFailures ? 'checked' : ''}></label>
     <label><span>Notify when tools go over the budget</span><input type="checkbox" data-key="notifyOverBudget" ${s.notifyOverBudget ? 'checked' : ''}></label>
   </div><p class="sub" style="margin-top:12px">Open at login is in the menu bar app's Settings.</p>`;
@@ -289,6 +313,7 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
   $('view-' + b.dataset.view).classList.add('on');
   $('title').textContent = b.textContent.trim();
   if (b.dataset.view === 'fixes') renderFixes();
+  if (b.dataset.view === 'servers') renderServers();
   if (b.dataset.view === 'clients') renderClients();
   if (b.dataset.view === 'settings') renderSettings();
   document.querySelector('.toolbar').classList.toggle('plain', ['clients', 'settings', 'fixes', 'servers'].includes(b.dataset.view));
@@ -313,8 +338,19 @@ $('servers').addEventListener('click', async e => {
   const name = e.target.dataset?.reset;
   if (!name) return;
   e.preventDefault();
-  await api('/api/trim/reset', { server: name });
-  refresh();
+  await api('/api/allowlist', { server: name, client: viewClient, tools: null });
+  renderServers();
+});
+$('servers').addEventListener('change', async e => {
+  const { server, tool } = e.target.dataset || {};
+  if (!server || !tool) return;
+  const x = summary.servers.find(s => s.name === server);
+  const tools = x.tools.filter(t => (t.name === tool ? e.target.checked : toolOn(server, viewClient, t))).map(t => t.name);
+  await api('/api/allowlist', { server, client: viewClient, tools });
+  await refresh();
+  const openNow = [...document.querySelectorAll('#servers details[open] .name')].map(n => n.textContent);
+  await renderServers();
+  document.querySelectorAll('#servers details').forEach(d => { if (openNow.includes(d.querySelector('.name').textContent)) d.open = true; });
 });
 
 const stream = new EventSource('/api/stream');

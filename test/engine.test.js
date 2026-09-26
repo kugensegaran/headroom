@@ -48,6 +48,9 @@ function drive(command, args, env = process.env) {
 }
 
 before(() => {
+  // An existing install: settings already there, so first-run defaults do not apply.
+  fs.mkdirSync(process.env.HEADROOM_HOME, { recursive: true });
+  fs.writeFileSync(path.join(process.env.HEADROOM_HOME, 'settings.json'), '{}');
   const home = process.env.HEADROOM_USER_HOME;
   fs.mkdirSync(path.join(home, '.cursor'), { recursive: true });
   fs.writeFileSync(path.join(home, '.cursor', 'mcp.json'), JSON.stringify({ mcpServers: { fake: { command: process.execPath, args: [FAKE] }, remote: { url: 'https://example.invalid/mcp' } } }));
@@ -87,7 +90,7 @@ test('summary reports tokens, usage, write tools', () => {
 
 test('trim plan keeps only used tools and proxy enforces the allow-list', async () => {
   const plan = planTrim({ days: 7 });
-  assert.deepEqual(plan.next.fake, ['fail', 'search']);
+  assert.deepEqual(plan.next.fake, { 'test-client': ['fail', 'search'] }, 'trimmed for the client that used it');
   assert.ok(plan.savedTokens > 0);
   setAllowlist(plan.next);
 
@@ -102,8 +105,11 @@ test('trim plan keeps only used tools and proxy enforces the allow-list', async 
 
   const sum = buildSummary();
   const fake = sum.servers.find(x => x.name === 'fake');
-  assert.equal(fake.enabledCount, 2);
-  assert.ok(fake.tokens < fake.tokensAll);
+  assert.equal(fake.allowlisted, true);
+  assert.equal(fake.enabledCount, 4, 'clients without their own list still get every tool');
+  const { toolAllowed } = await import('../src/allowlist.js');
+  assert.equal(toolAllowed({ server: 'fake', client: 'test-client', tool: 'delete_item' }), false);
+  assert.equal(toolAllowed({ server: 'fake', client: 'claude-code', tool: 'delete_item' }), true);
   setAllowlist({});
 });
 
@@ -642,4 +648,56 @@ test('costs are calibrated and shown per client, with how each client loads tool
   assert.equal(sum.estimated, true);
   assert.ok(sum.perClient.every(c => c.loading === 'on-demand') ? sum.pctOfWindow === 0 : true);
   fs.rmSync(path.join(process.env.HEADROOM_USER_HOME, '.claude'), { recursive: true });
+});
+
+test('per-client tool sets; new installs start with write tools off', async () => {
+  const { toolAllowed, setToolList, clientId } = await import('../src/allowlist.js');
+  assert.deepEqual(['claude-ai', 'local-agent-mode-memory', 'claude-code', 'cursor-vscode', 'Visual Studio Code'].map(clientId), ['claude-desktop', 'claude-cowork', 'claude-code', 'cursor', 'vscode']);
+
+  // Old flat lists still mean every client.
+  const flat = { srv: ['a'] };
+  assert.equal(toolAllowed({ allow: flat, settings: {}, server: 'srv', client: 'cursor', tool: 'b' }), false);
+  // Per client, with * as the fallback; write tools off only where no list exists.
+  const per = { srv: { '*': ['a'], 'claude-code': ['a', 'delete_x'] } };
+  assert.equal(toolAllowed({ allow: per, settings: {}, server: 'srv', client: 'claude-code', tool: 'delete_x' }), true);
+  assert.equal(toolAllowed({ allow: per, settings: {}, server: 'srv', client: 'cursor', tool: 'delete_x' }), false);
+  assert.equal(toolAllowed({ allow: {}, settings: { writeToolsOff: true }, server: 'srv', client: 'cursor', tool: 'delete_x' }), false);
+  assert.equal(toolAllowed({ allow: {}, settings: { writeToolsOff: true }, server: 'srv', client: 'cursor', tool: 'read_x' }), true);
+
+  // Through the proxy: Claude Code gets its own set, other clients the default.
+  setToolList('fake', 'claude-code', ['search']);
+  const listAs = async name => {
+    const s = drive(process.execPath, [CLI, 'proxy', '--name', 'fake', '--', process.execPath, FAKE]);
+    await s.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name, version: '1' } });
+    const list = await s.req('tools/list', {});
+    const del = await s.req('tools/call', { name: 'delete_item', arguments: { id: '1' } });
+    await s.close();
+    return { names: list.result.tools.map(t => t.name).sort(), del };
+  };
+  const cc = await listAs('claude-code');
+  assert.deepEqual(cc.names, ['search']);
+  assert.match(cc.del.error.message, /turned off in Headroom for this app/);
+  const cursor = await listAs('cursor-vscode');
+  assert.equal(cursor.names.length, 4);
+  assert.equal(cursor.del.result.content[0].text, 'ran delete_item');
+
+  // The dashboard API sets and clears lists.
+  const server = await startServer({ port: 0 });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const post = body => fetch(`${base}/api/allowlist`, { method: 'POST', headers: { 'x-headroom': '1', 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  assert.equal((await post({ server: 'fake', client: 'cursor', tools: 'all' })).status, 400);
+  await post({ server: 'fake', client: 'cursor', tools: ['read_item'] });
+  let got = await (await fetch(`${base}/api/allowlist`)).json();
+  assert.deepEqual(got.allowlist.fake, { 'claude-code': ['search'], cursor: ['read_item'] });
+  await post({ server: 'fake', client: 'cursor', tools: null });
+  await post({ server: 'fake', client: 'claude-code', tools: null });
+  got = await (await fetch(`${base}/api/allowlist`)).json();
+  assert.equal(got.allowlist.fake, undefined);
+  server.close();
+
+  // A brand new install turns write tools off; the fixture above is an existing install.
+  const fresh = fs.mkdtempSync(path.join(os.tmpdir(), 'headroom-fresh-'));
+  const { execFileSync } = await import('node:child_process');
+  execFileSync(process.execPath, [CLI, 'audit'], { env: { ...process.env, HEADROOM_HOME: path.join(fresh, 'data'), HEADROOM_USER_HOME: path.join(fresh, 'home') } });
+  assert.equal(JSON.parse(fs.readFileSync(path.join(fresh, 'data', 'settings.json'), 'utf8')).writeToolsOff, true);
 });

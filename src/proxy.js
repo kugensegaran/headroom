@@ -4,6 +4,7 @@ import { appendEvent, getAllowlist, getSettings, saveCatalog } from './store.js'
 import { isWriteTool, serverTokens } from './tokens.js';
 import { isLicensed } from './license.js';
 import { serverEnv } from './paths.js';
+import { clientId, toolAllowed } from './allowlist.js';
 
 /**
  * The part of the proxy that does not care how the server is reached.
@@ -34,9 +35,12 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
   const pending = new Map(); // id -> { ts, method, tool, bytes }
   let clientName = 'unknown';
 
+  // Read fresh each time so allow-list changes apply without restarting the client.
   const allowed = () => {
-    const list = getAllowlist()[name];
-    return Array.isArray(list) ? new Set(list) : null;
+    const allow = getAllowlist();
+    const settings = getSettings();
+    const client = clientId(clientName);
+    return tool => toolAllowed({ allow, settings, server: name, client, tool });
   };
 
   const log = event => {
@@ -56,10 +60,9 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
     }
     if (msg && msg.method === 'tools/call') {
       const tool = msg.params?.name;
-      const allow = allowed();
-      if (allow && !allow.has(tool)) {
+      if (!allowed()(tool)) {
         log({ ts: Date.now(), method: 'tools/call', tool, ms: 0, reqBytes: line.length, resBytes: 0, status: 'blocked', write: isWriteTool(tool || '') });
-        toClient(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: `Tool "${tool}" is turned off in Headroom.` } }));
+        toClient(JSON.stringify({ jsonrpc: '2.0', id: msg.id, error: { code: -32601, message: `Tool "${tool}" is turned off in Headroom for this app. Turn it on in the Headroom dashboard under Servers.` } }));
         return;
       }
     }
@@ -80,8 +83,9 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
         const fixed = getSettings().compatFixes ? stripSchemaDialects(all) : 0;
         saveCatalog(name, all, { tokens: serverTokens(all), source: 'proxy' });
         const allow = allowed();
-        if (allow) msg.result.tools = all.filter(t => allow.has(t.name));
-        if (allow || fixed) line = JSON.stringify(msg);
+        const visible = all.filter(t => allow(t.name));
+        if (visible.length !== all.length) msg.result.tools = visible;
+        if (visible.length !== all.length || fixed) line = JSON.stringify(msg);
         if (fixed) log({ ts: Date.now(), method: 'compat', fix: 'schema-dialect', fixed, ms: 0, status: 'ok' });
       }
       const isError = !!msg.error || msg.result?.isError === true;
