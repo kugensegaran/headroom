@@ -15,7 +15,7 @@ Headroom is free and open source under the MIT licence. Every feature is availab
 
 ### The app
 
-1. Download the latest DMG from [GitHub Releases](https://github.com/kugensegaran/headroom/releases).
+1. [Download Headroom.dmg](https://github.com/kugensegaran/headroom/releases/latest/download/Headroom.dmg) (all versions are on [GitHub Releases](https://github.com/kugensegaran/headroom/releases)).
 2. Open the DMG and drag Headroom to Applications.
 2. Open Headroom. It lives in the menu bar; there is no Dock icon.
 3. The welcome window checks the servers in Claude Desktop, Claude Code, Cursor and VS Code and lists their tools.

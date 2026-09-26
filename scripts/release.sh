@@ -6,7 +6,7 @@
 #   - a "Developer ID Application" certificate in the login keychain (or DEVELOPER_ID="Developer ID Application: Name (TEAM)")
 #   - notarization credentials stored once with: xcrun notarytool store-credentials headroom
 #   - the Sparkle private key in the keychain (generate_keys)
-#   - gh logged in, and the public releases repo (RELEASE_REPO, default kugensegaran/headroom-site)
+#   - gh logged in, and the public releases repo (RELEASE_REPO, default kugensegaran/headroom)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,7 +14,7 @@ APP="$ROOT/build/Headroom.app"
 OUT="$ROOT/build/release"
 ADHOC=0
 [[ "${1:-}" == "--adhoc" ]] && ADHOC=1
-RELEASE_REPO="${RELEASE_REPO:-kugensegaran/headroom-site}"
+RELEASE_REPO="${RELEASE_REPO:-kugensegaran/headroom}"
 NOTARY_PROFILE="${NOTARY_PROFILE:-headroom}"
 SPARKLE_BIN="$ROOT/mac/.build/artifacts/sparkle/Sparkle/bin"
 
@@ -76,6 +76,7 @@ notarize() {
   xcrun notarytool submit "$1" --keychain-profile "$NOTARY_PROFILE" --wait
 }
 
+rm -rf "$OUT"
 mkdir -p "$OUT"
 if [[ $ADHOC == 0 ]]; then
   echo "==> Notarizing the app"
@@ -109,5 +110,8 @@ echo "==> Appcast"
 "$SPARKLE_BIN/generate_appcast" --download-url-prefix "https://github.com/$RELEASE_REPO/releases/download/v$VERSION/" "$OUT"
 
 echo "==> Draft GitHub Release on $RELEASE_REPO"
-gh release create "v$VERSION" "$DMG" --repo "$RELEASE_REPO" --draft --title "Headroom $VERSION" --notes "Headroom $VERSION"
-echo "Done. Check the draft, publish it, then publish $OUT/appcast.xml to the Pages site."
+# Also upload under a fixed name, so releases/latest/download/Headroom.dmg always gets the newest DMG.
+LATEST="$(mktemp -d)/Headroom.dmg"
+cp "$DMG" "$LATEST"
+gh release create "v$VERSION" "$DMG" "$LATEST" --repo "$RELEASE_REPO" --draft --title "Headroom $VERSION" --notes "Headroom $VERSION"
+echo "Done. Check the draft, publish it, then run scripts/deploy-site.sh to publish $OUT/appcast.xml."

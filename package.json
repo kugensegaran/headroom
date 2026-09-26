@@ -1,6 +1,6 @@
 {
   "name": "headroom",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Every MCP server, working in every client. See every call. Local proxy, compatibility fixes, per-app tool sets and dashboard.",
   "type": "module",
   "bin": { "headroom": "src/cli.js" },
