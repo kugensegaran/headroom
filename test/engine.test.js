@@ -485,7 +485,7 @@ test('health endpoint, failing servers, and serve exits with its parent', async 
 
 test('clients API lists each config and how its servers connect; client names are friendly', async () => {
   const { clientLabel } = await import('../src/clients.js');
-  assert.deepEqual(['claude-ai', 'claude-code', 'cursor-vscode', 'Visual Studio Code', 'zed'].map(clientLabel), ['Claude', 'Claude Code', 'Cursor', 'VS Code', 'zed']);
+  assert.deepEqual(['claude-ai', 'claude-code', 'local-agent-mode-memory', 'cursor-vscode', 'Visual Studio Code', 'zed'].map(clientLabel), ['Claude', 'Claude Code', 'Claude Cowork', 'Cursor', 'VS Code', 'zed']);
   const server = await startServer({ port: 0 });
   const clients = await (await fetch(`http://127.0.0.1:${server.address().port}/api/clients`)).json();
   const cursor = clients.find(c => c.id === 'cursor');

@@ -131,6 +131,8 @@ export function transportOf(entry) {
 export function clientLabel(name = '') {
   if (name === 'claude-ai') return 'Claude';
   if (name === 'claude-code') return 'Claude Code';
+  // Claude Desktop's Cowork mode names itself per server, e.g. local-agent-mode-memory.
+  if (/^local-agent-mode/.test(name)) return 'Claude Cowork';
   if (/cursor/i.test(name)) return 'Cursor';
   if (/visual studio code|vscode/i.test(name)) return 'VS Code';
   return name || 'unknown';
