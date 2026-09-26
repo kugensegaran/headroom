@@ -2,11 +2,9 @@
 
 ## Waiting on Kugen
 
-- **M6 Sparkle signing key.** The private key must be created in your own Keychain. In Terminal, from the repo:
-  `cd ~/Documents/headroom/mac && swift package resolve && .build/artifacts/sparkle/Sparkle/bin/generate_keys`
-  It prints a public key (a line of base64). That one is public: paste it to Claude, or put it in `mac/Info.plist` under `SUPublicEDKey`. Keep the private key in the Keychain; back it up with `generate_keys -x ~/sparkle-private-key` somewhere safe (a password manager), because losing it means existing installs can never update.
-- **M7 Developer ID certificate.** None is installed on this Mac. In Xcode: Settings, Accounts, your Apple Developer team, Manage Certificates, +, Developer ID Application. Then `security find-identity -v -p codesigning` should list it.
-- **M7 notarization credentials.** In Terminal (not chat): create an app-specific password at account.apple.com, then `xcrun notarytool store-credentials headroom --apple-id kugenesh@gmail.com --team-id YOURTEAMID` and paste the password when it asks.
+- **M6 back up the Sparkle private key** if you have not yet: `cd ~/Documents/headroom/mac && .build/artifacts/sparkle/Sparkle/bin/generate_keys -x ~/sparkle-private-key`, store the file in a password manager, then delete it. Losing the key means existing installs can never update.
+- **M7 and M9 clean-account check.** Create a fresh macOS user, download Headroom.dmg from the site, install, and run docs/QA.md. Tell Claude what fails.
+- **M8 domain** (optional). Pick one, then `SITE_DOMAIN=yourdomain scripts/deploy-site.sh` and point DNS at GitHub Pages.
 
 A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. Free and open source (MIT), local only. Owner: Kugen Segaran.
 
@@ -60,6 +58,7 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 - 2026-09-25: engine done and tested against real servers (filesystem, memory, playwright). Swift app builds and runs on this Mac (full Xcode selected, no SDK fallback). Renamed from MCP Meter to Headroom.
 - 2026-09-26: M10 repositioning done (calibrated per-app estimates, per-app tool sets, VS Code guard, named compatibility fixes, new copy, site redeployed). M2 waits only on a Claude Desktop tool call.
 - 2026-09-26 (later): M2 done. Claude Cowork tool calls go through Headroom with status ok.
+- 2026-09-26: v1.0.0 released: Developer ID signed, notarized and stapled DMG on https://github.com/kugensegaran/headroom/releases/tag/v1.0.0, appcast live on the site, Download buttons fetch releases/latest/download/Headroom.dmg. Apple Silicon only (bundled Node is arm64).
 - 2026-09-26: Headroom is free and open source (MIT). Licensing, the trial and every feature gate removed (M5 dropped); site shows Download and View on GitHub; repo public.
 - 2026-09-25 (later): M1, M3, M4 done; M6 to M8 built and tested up to the points that need Kugen (see Waiting on Kugen). Screenshots for QA: `open build/Headroom.app --args -show popover -appearance dark`, demo data via scripts/demo-data.js.
 
@@ -96,12 +95,12 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [x] Popover and dashboard checked against the Figma frames in light and dark mode. (Figma has light frames only; dark checked for contrast. Added the Clients and Settings dashboard views from the Figma sidebar, friendly client names, failing servers under Needs attention.)
 
 ### M6 Updates
-- [ ] WAITING Sparkle 2 via SwiftPM. STOP: Kugen runs Sparkle's `generate_keys` so the private key stays in his Keychain; public key goes in Info.plist. (Sparkle is integrated, embedded by build-app.sh, and switches itself on once `SUPublicEDKey` is set; "Check for Updates…" appears in the menu then.)
-- [ ] WAITING Appcast hosted on GitHub Releases or Pages. (The public repo kugensegaran/headroom-site exists; the first appcast is published by release.sh plus deploy-site.sh once the signing key is set.)
+- [x] Sparkle 2 via SwiftPM. STOP: Kugen runs Sparkle's `generate_keys` so the private key stays in his Keychain; public key goes in Info.plist. (Sparkle is integrated, embedded by build-app.sh, and switches itself on once `SUPublicEDKey` is set; "Check for Updates…" appears in the menu then.)
+- [x] Appcast hosted on GitHub Releases or Pages. (appcast.xml on the headroom-site Pages site, DMGs on kugensegaran/headroom releases; v1.0.0 published 2026-09-26.)
 
 ### M7 Release pipeline
-- [ ] WAITING `scripts/release.sh`: bundle node, sign node and app with Developer ID (hardened runtime, JIT entitlements for node), notarize, staple, build DMG, draft GitHub Release. Kugen has an Apple Developer account. (Written; `--adhoc` run verified: bundled node runs under hardened runtime with JIT entitlements, app launches from the DMG build. The notarized run waits on the certificate and credentials.)
-- [ ] WAITING STOP: Kugen runs `xcrun notarytool store-credentials headroom ...` himself (app-specific password never goes through chat).
+- [x] `scripts/release.sh`: bundle node, sign node and app with Developer ID (hardened runtime, JIT entitlements for node), notarize, staple, build DMG, draft GitHub Release. Kugen has an Apple Developer account. (Written; `--adhoc` run verified: bundled node runs under hardened runtime with JIT entitlements, app launches from the DMG build. Notarized v1.0.0 run done 2026-09-26: app and DMG accepted, stapled, Gatekeeper "Notarized Developer ID".)
+- [x] STOP: Kugen runs `xcrun notarytool store-credentials headroom ...` himself (app-specific password never goes through chat).
 - [ ] WAITING Notarized DMG installs and runs on a clean user account.
 
 ### M8 Website
