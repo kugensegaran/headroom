@@ -89,6 +89,9 @@ export function buildSummary({ days = 7 } = {}) {
     notifyFailures: settings.notifyFailures,
     retentionDays: settings.retentionDays,
     failing,
+    compatFixes: settings.compatFixes,
+    // Latest compatibility fix per server in the period, e.g. 14 schemas for filesystem.
+    fixes: Object.values(events.filter(e => e.method === 'compat').reduce((m, e) => ((m[e.server] = { server: e.server, fix: e.fix, fixed: e.fixed, ts: e.ts }), m), {})),
     license: licenseState(),
     paused: settings.paused,
     contextWindow: settings.contextWindow,

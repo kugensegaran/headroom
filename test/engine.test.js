@@ -580,3 +580,38 @@ test('servers start even when the client gives a minimal PATH (Claude Desktop, F
   assert.equal(init.result.serverInfo.name, 'fake');
   await s.close();
 });
+
+test('compatibility fix removes $schema from tool schemas, logs it, and can be turned off', async () => {
+  const { setSettings, getSettings } = await import('../src/store.js');
+  const env = { ...process.env, FAKE_SCHEMA: 'draft-07' };
+  const listVia = async name => {
+    const s = drive(process.execPath, [CLI, 'proxy', '--name', name, '--', process.execPath, FAKE], env);
+    await s.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'claude-ai', version: '1' } });
+    const list = await s.req('tools/list', {});
+    const call = await s.req('tools/call', { name: 'search', arguments: { q: 'x' } });
+    await s.close();
+    return { tools: list.result.tools, call };
+  };
+  assert.equal(getSettings().compatFixes, true, 'on by default');
+
+  const { tools, call } = await listVia('draft7');
+  assert.equal(call.result.content[0].text, 'ran search', 'calls still work');
+  assert.ok(tools.every(t => !('$schema' in t.inputSchema)));
+  assert.ok(!('$schema' in tools[1].outputSchema));
+  assert.equal(tools[1].outputSchema.properties.item.$schema, 'nested-stays', 'only the top-level key is touched');
+  assert.deepEqual(tools[0].inputSchema, { type: 'object', properties: { q: { type: 'string' } } }, 'everything else intact');
+  assert.equal(tools[0].description, 'Search things');
+
+  const fix = readEvents().filter(e => e.method === 'compat' && e.server === 'draft7');
+  assert.equal(fix.length, 1);
+  assert.equal(fix[0].fixed, 5, '4 input schemas and 1 output schema');
+  const sum = buildSummary();
+  assert.deepEqual(sum.fixes.find(f => f.server === 'draft7').fixed, 5);
+  assert.equal(sum.today.calls, readEvents().filter(e => e.method === 'tools/call').length, 'fix events are not counted as calls');
+
+  setSettings({ compatFixes: false });
+  const off = await listVia('draft7-off');
+  assert.equal(off.tools[0].inputSchema.$schema, 'http://json-schema.org/draft-07/schema#', 'passed through when off');
+  assert.equal(readEvents().filter(e => e.method === 'compat' && e.server === 'draft7-off').length, 0);
+  setSettings({ compatFixes: true });
+});

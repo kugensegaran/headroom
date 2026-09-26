@@ -156,6 +156,7 @@ export function startServer({ port = 7777, host = '127.0.0.1' } = {}) {
         if ('paused' in body) patch.paused = !!body.paused;
         if ('notifyOverBudget' in body) patch.notifyOverBudget = !!body.notifyOverBudget;
         if ('notifyFailures' in body) patch.notifyFailures = !!body.notifyFailures;
+        if ('compatFixes' in body) patch.compatFixes = !!body.compatFixes;
         const next = setSettings(patch);
         if ('retentionDays' in patch) pruneEvents();
         return send(res, 200, next);

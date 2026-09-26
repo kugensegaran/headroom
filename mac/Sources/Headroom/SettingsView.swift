@@ -50,6 +50,13 @@ struct SettingsView: View {
                     }))
             }
             Section {
+                Toggle("Compatibility fixes", isOn: binding({ $0.compatFixes }, "compatFixes"))
+            } footer: {
+                Text("Removes the $schema line from tool schemas, which Claude Desktop rejects. Everything else passes through unchanged. Restart your MCP clients after changing this.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Section {
                 Toggle("Open at login", isOn: Binding(get: { launchAtLogin }, set: setLaunchAtLogin))
                 if let loginError {
                     Text(loginError).font(.caption).foregroundStyle(.secondary)

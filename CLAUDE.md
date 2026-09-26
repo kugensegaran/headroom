@@ -82,8 +82,8 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 
 ### M2 Real-world check on this Mac
 - [x] `node src/cli.js audit` against Kugen's real configs; fix every server that fails for a reason on our side. (2026-09-25: no local servers configured on this Mac, only claude.ai connectors, which run remotely and are out of Headroom's reach. Fixed the contradictory empty-audit message.)
-- [ ] WAITING `node src/cli.js install`; ask Kugen to restart Claude Desktop and Claude Code and use tools; confirm calls appear in the dashboard and popover.
-- [ ] WAITING Sanity-check token estimates: compare one server's total against the client's own context readout (Claude Code `/context`). Note the gap in docs/ACCURACY.md.
+- [ ] WAITING `node src/cli.js install`; ask Kugen to restart Claude Desktop and Claude Code and use tools; confirm calls appear in the dashboard and popover. (Installed 2026-09-26 with filesystem and memory. Claude Code calls confirmed in the dashboard. Claude Desktop connects through Headroom; its tool calls failed on draft-07 schemas, so a compatibility fix now strips `$schema`. Waiting on a Desktop retest.)
+- [x] Sanity-check token estimates: compare one server's total against the client's own context readout (Claude Code `/context`). Note the gap in docs/ACCURACY.md. (2026-09-26: Claude Code counts 1.85 to 1.89 times Headroom's estimate; Claude Code also defers MCP tools. Calibration proposal in docs/ACCURACY.md, needs Kugen's call.)
 
 ### M3 Engine completeness
 - [x] Claude Code plugin servers: `.mcp.json` inside enabled plugins (`~/.claude/plugins`, `enabledPlugins` in `~/.claude/settings.json`). Audit them; install cannot rewrite plugin files, so show them as not proxied with a reason. Tests.

@@ -10,9 +10,26 @@ import { serverEnv } from './paths.js';
  * Every message is passed through unchanged, except:
  *  - tools/list results are filtered to the server's allow-list (if one exists)
  *  - tools/call for a tool outside the allow-list gets a JSON-RPC error
+ *  - with compatibility fixes on, tools/list results lose the `$schema` key of each
+ *    inputSchema and outputSchema (Claude Desktop rejects draft-07 as an unsupported dialect)
  * Every request/response pair is logged as one event.
  * `toServer(line)` and `toClient(line)` deliver one JSON-RPC line each way.
  */
+/** Drop `$schema` from each tool's inputSchema and outputSchema, in place. Returns how many were removed. */
+export function stripSchemaDialects(tools) {
+  let fixed = 0;
+  for (const t of tools) {
+    for (const key of ['inputSchema', 'outputSchema']) {
+      const schema = t && t[key];
+      if (schema && typeof schema === 'object' && '$schema' in schema) {
+        delete schema.$schema;
+        fixed++;
+      }
+    }
+  }
+  return fixed;
+}
+
 export function createTap({ name, toServer, toClient, stderr = process.stderr }) {
   const pending = new Map(); // id -> { ts, method, tool, bytes }
   let clientName = 'unknown';
@@ -60,12 +77,12 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
       pending.delete(msg.id);
       if (req.method === 'tools/list' && Array.isArray(msg.result?.tools)) {
         const all = msg.result.tools;
+        const fixed = getSettings().compatFixes ? stripSchemaDialects(all) : 0;
         saveCatalog(name, all, { tokens: serverTokens(all), source: 'proxy' });
         const allow = allowed();
-        if (allow) {
-          msg.result.tools = all.filter(t => allow.has(t.name));
-          line = JSON.stringify(msg);
-        }
+        if (allow) msg.result.tools = all.filter(t => allow.has(t.name));
+        if (allow || fixed) line = JSON.stringify(msg);
+        if (fixed) log({ ts: Date.now(), method: 'compat', fix: 'schema-dialect', fixed, ms: 0, status: 'ok' });
       }
       const isError = !!msg.error || msg.result?.isError === true;
       if (req.method !== 'ping') {

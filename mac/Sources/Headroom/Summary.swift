@@ -49,11 +49,12 @@ struct Summary: Decodable {
     var notifyOverBudget = false
     var notifyFailures = true
     var retentionDays = 30
+    var compatFixes = true
     var license: License = .trial
 
     private enum CodingKeys: String, CodingKey {
         case paused, contextWindow, budgetPct, totalTokens, pctOfWindow, unusedTools, trimmableTokens, hasUsageData, servers, today
-        case failing, notifyOverBudget, notifyFailures, retentionDays, license
+        case failing, notifyOverBudget, notifyFailures, retentionDays, license, compatFixes
     }
 
     static let empty = Summary(

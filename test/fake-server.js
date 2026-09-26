@@ -8,6 +8,12 @@ const tools = [
   { name: 'delete_item', description: 'Delete an item permanently', inputSchema: { type: 'object', properties: { id: { type: 'string' } } } },
   { name: 'fail', description: 'Always errors', inputSchema: { type: 'object' } },
 ];
+// FAKE_SCHEMA=draft-07 makes every schema declare its dialect, like the reference servers do.
+if (process.env.FAKE_SCHEMA) {
+  const dialect = process.env.FAKE_SCHEMA === 'draft-07' ? 'http://json-schema.org/draft-07/schema#' : process.env.FAKE_SCHEMA;
+  for (const t of tools) t.inputSchema = { $schema: dialect, ...t.inputSchema };
+  tools[1].outputSchema = { $schema: dialect, type: 'object', properties: { item: { type: 'string', $schema: 'nested-stays' } } };
+}
 const out = m => process.stdout.write(JSON.stringify(m) + '\n');
 
 process.stdin.on(

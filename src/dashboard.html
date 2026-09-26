@@ -214,6 +214,8 @@ function renderSummary() {
   const failedToday = {};
   for (const e of events) if (e.status === 'error' && e.method === 'tools/call' && !(s.failing || []).some(f => f.server === e.server)) failedToday[e.server] = (failedToday[e.server] || 0) + 1;
   for (const [srv, n] of Object.entries(failedToday)) issues.push(['var(--orange)', `${srv}: ${n} failed call${n === 1 ? '' : 's'}`, 'Open Live Traffic to see which tools failed.']);
+  const fixes = s.fixes || [];
+  if (fixes.length) issues.push(['var(--blue)', `Fixed ${fixes.reduce((n, f) => n + f.fixed, 0)} schemas for ${fixes.map(f => f.server).join(', ')}`, 'Removed $schema declarations that Claude Desktop rejects. Turn this off in Settings, Compatibility fixes.']);
   if (s.hasUsageData && s.unusedTools) issues.push(['var(--orange)', `${s.unusedTools} tools never called`, `Trim them to save about ${k(s.trimmableTokens)} tokens per turn.`]);
   for (const c of s.clashes.slice(0, 3)) issues.push(['var(--orange)', `${c.tool} appears ${c.servers.length} times`, `${c.servers.join(', ')} all expose a tool named ${c.tool}.`]);
   if (s.pctOfWindow * 100 > s.budgetPct) issues.push(['var(--orange)', 'Over your context budget', `${Math.round(s.pctOfWindow * 100)}% of the window goes to tool definitions.`]);
@@ -254,6 +256,7 @@ function renderSettings() {
     <label><span>Budget for MCP tools</span><select data-key="budgetPct">${opt([5, 10, 15, 20, 25, 30, 40, 50], s.budgetPct, v => v + '% of the window')}</select></label>
     <label><span>Keep call history for</span><select data-key="retentionDays">${opt([7, 14, 30, 90, 365], s.retentionDays, v => v === 365 ? '1 year' : v + ' days')}</select></label>
     <label><span>Pause logging</span><input type="checkbox" data-key="paused" ${s.paused ? 'checked' : ''}></label>
+    <label><span>Compatibility fixes <span class="sub">(remove $schema from tool schemas)</span></span><input type="checkbox" data-key="compatFixes" ${s.compatFixes ? 'checked' : ''}></label>
     <label><span>Notify when a server keeps failing</span><input type="checkbox" data-key="notifyFailures" ${s.notifyFailures ? 'checked' : ''}></label>
     <label><span>Notify when tools go over the budget</span><input type="checkbox" data-key="notifyOverBudget" ${s.notifyOverBudget ? 'checked' : ''}></label>
   </div><p class="sub" style="margin-top:12px">Open at login is in the menu bar app's Settings.</p>`;
