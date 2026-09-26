@@ -222,7 +222,7 @@ function renderSummary() {
   if (vs) issues.push(['var(--orange)', `VS Code has ${vs.toolCount} MCP tools`, `Its limit is ${vs.limit} per request. <a href="#" id="vscode-profile">Use a trimmed VS Code profile</a> (keeps what VS Code used, then read-only tools).`, true]);
   const fixes = s.fixes || [];
   for (const f of fixes) issues.push(['var(--blue)', f.note, `Compatibility fix "${f.name}". Turn it off in Settings.`]);
-  if (s.hasUsageData && s.unusedTools) issues.push(['var(--orange)', `${s.unusedTools} tools never called`, `Trim them to save about ${k(s.trimmableTokens)} tokens per turn.`]);
+  if (s.hasUsageData && s.unusedTools) issues.push(['var(--orange)', `${s.unusedTools} tools never called`, `Trimming saves about ${k(s.trimmableTokens)} tokens, estimated, in apps that send every tool.`]);
   for (const c of s.clashes.slice(0, 3)) issues.push(['var(--orange)', `${c.tool} appears ${c.servers.length} times`, `${c.servers.join(', ')} all expose a tool named ${c.tool}.`]);
   if (s.headlineClient && s.pctOfWindow * 100 > s.budgetPct) issues.push(['var(--orange)', `Over budget in ${s.headlineClient}`, `Tool definitions could take up to ${Math.round(s.pctOfWindow * 100)}% of its ${k(s.contextWindow)} window.`]);
   $('issues').innerHTML = issues.map(([c, t, b, html]) => `<div class="issue"><span class="dot" style="background:${c}"></span><div><b>${esc(t)}</b><span>${html ? b : esc(b)}</span></div></div>`).join('') || '<div class="sub">Nothing needs attention.</div>';

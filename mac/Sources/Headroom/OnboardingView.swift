@@ -16,7 +16,7 @@ struct OnboardingView: View {
                 Image(nsImage: NSApp.applicationIconImage).resizable().frame(width: 56, height: 56)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Welcome to Headroom").font(.title2.weight(.semibold))
-                    Text("See what your MCP servers cost and what they are doing.").foregroundStyle(.secondary)
+                    Text("Every MCP server, working in every client. See every call.").foregroundStyle(.secondary)
                 }
             }
             switch step {
@@ -35,8 +35,9 @@ struct OnboardingView: View {
     private var intro: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 8) {
-                Label("Every tool an MCP server offers is loaded into the model's context on every turn. Headroom measures that cost.", systemImage: "gauge.with.dots.needle.33percent")
-                Label("It can also show each tool call live and turn off the tools you never use.", systemImage: "list.bullet.rectangle")
+                Label("Headroom sits between your apps and your MCP servers and shows every call as it happens.", systemImage: "list.bullet.rectangle")
+                Label("It smooths over small differences, so a server that works in one app works in the others, and gives each app its own set of tools.", systemImage: "checkmark.circle")
+                Label("It estimates what tool definitions cost in each app. Some apps load tools on demand; others send every tool with every message.", systemImage: "gauge.with.dots.needle.33percent")
                 Label("Everything stays on this Mac. Nothing is sent anywhere.", systemImage: "lock")
             }
             .labelStyle(OnboardingLabelStyle())
@@ -60,8 +61,9 @@ struct OnboardingView: View {
                     .fixedSize(horizontal: false, vertical: true)
                 HStack { Spacer(); Button("Done") { finish() }.keyboardShortcut(.defaultAction) }
             } else {
-                Text("Your tools load \(Format.grouped(engine.summary.totalTokens)) tokens per turn, \(Format.percent(engine.summary.pctOfWindow)) of a \(Format.tokens(engine.summary.contextWindow)) window.")
+                Text("\(results.filter(\.ok).count) of \(results.count) servers answered. Their tool definitions come to about \(Format.grouped(engine.summary.totalTokens)) tokens, estimated.")
                     .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(results) { r in
@@ -84,7 +86,7 @@ struct OnboardingView: View {
                     }
                 }
                 .frame(maxHeight: 220)
-                Text("To see calls live and trim unused tools, route your clients through Headroom. It backs up each config first, and you can undo this any time with Restore Original Configs in the menu bar.")
+                Text("To see every call, apply compatibility fixes and set tools per app, route your clients through Headroom. It backs up each config first, and you can undo this any time with Restore Original Configs in the menu bar.")
                     .font(.callout).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack {

@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Headroom for Mac: see what your MCP servers cost</title>
-<meta name="description" content="A menu bar app that shows what your MCP servers cost you in context tokens, and what they are doing, live. Free in-browser audit.">
+<title>Headroom for Mac: every MCP server, working in every client</title>
+<meta name="description" content="Every MCP server, working in every client. See every call. A Mac menu bar app that fixes what one app would reject, gives each app its own tools, and shows every call live. Free in-browser audit.">
 <link rel="icon" href="icon.png">
 <style>
 :root {
@@ -100,8 +100,8 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
 
 <header class="hero wrap">
   <p class="eyebrow">Headroom for Mac</p>
-  <h1>Every tool call.<br>Every token.</h1>
-  <p class="lede">A menu bar app that shows what your MCP servers cost you, and what they're doing, live.</p>
+  <h1>Every MCP server,<br>working in every client.</h1>
+  <p class="lede">See every call. Headroom sits between your apps and your MCP servers, smooths over what one app would reject, and gives each app the tools it should have.</p>
   <div class="ctas">
     <a class="btn buy" id="buy-hero" href="#pricing">Buy</a>
     <a href="#audit">Try the free audit ›</a>
@@ -112,7 +112,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
   <div class="desk">
     <picture>
       <source srcset="popover-dark.png" media="(prefers-color-scheme: dark)">
-      <img src="popover-light.png" alt="The Headroom menu bar popover: 59,016 tokens of context loaded per turn across six servers, with a note that 82 tools went unused this week." width="340" height="576">
+      <img src="popover-light.png" alt="The Headroom menu bar popover: six MCP servers with their estimated tool definition size, how each app loads them, and today's calls." width="340" height="656">
     </picture>
   </div>
 </div>
@@ -120,7 +120,7 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
 <section class="audit" id="audit">
   <div class="wrap">
     <h2>Check your setup in seconds.</h2>
-    <p class="sub">Paste your config. It runs in your browser, so nothing leaves your machine.</p>
+    <p class="sub">Paste your config to see each server's tools, write tools and name clashes. It runs in your browser, so nothing leaves your machine.</p>
     <div class="cards">
       <div class="card">
         <h3>MCP config</h3>
@@ -144,18 +144,18 @@ footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding
   <section class="features" id="features" aria-label="Features">
     <div>
       <svg viewBox="0 0 28 28"><path d="M2 14h6l3-8 6 16 3-8h6"/></svg>
-      <h3>Live traffic</h3>
-      <p>Every call from Claude, Cursor and VS Code, with latency and status.</p>
+      <h3>See every call</h3>
+      <p>Every call from Claude, Claude Code, Cursor and VS Code, with latency and status, as it happens.</p>
     </div>
     <div>
-      <svg viewBox="0 0 28 28"><path d="M4 20a10 10 0 1 1 20 0"/><path d="M14 20l5-7"/></svg>
-      <h3>Exact token cost</h3>
-      <p>See what each server loads into every turn, local servers included.</p>
+      <svg viewBox="0 0 28 28"><path d="M6 14l5 5 11-11"/></svg>
+      <h3>Works in every app</h3>
+      <p>Compatibility fixes let a server made for one app work in the others. Each fix is listed and can be turned off.</p>
     </div>
     <div>
       <svg viewBox="0 0 28 28"><path d="M5 8h18M5 14h12M5 20h6"/></svg>
-      <h3>One-click trim</h3>
-      <p>Keep the tools you use. Turn the rest off for every client.</p>
+      <h3>Tools per app</h3>
+      <p>Give each app its own tools. Write and delete tools stay off until you turn them on. VS Code stays under its 128-tool limit.</p>
     </div>
     <div>
       <svg viewBox="0 0 28 28"><rect x="6" y="12" width="16" height="12" rx="2.5"/><path d="M9.5 12V9a4.5 4.5 0 0 1 9 0v3"/></svg>
@@ -223,7 +223,8 @@ async function run() {
   const known = r.rows.filter(x => x.tokens !== null);
   report.innerHTML = `<h3>Report</h3>
     <div class="big">${r.total.toLocaleString('en-US')}</div>
-    <div class="muted" style="font-size:14px">tokens loaded every turn, ${Math.round(r.pct * 100)}% of a ${k(r.contextWindow)} window${r.unknown ? `, plus ${r.unknown} server${r.unknown === 1 ? '' : 's'} not measured here` : ''}</div>
+    <div class="muted" style="font-size:14px">tokens of tool definitions, estimated${r.unknown ? `, plus ${r.unknown} server${r.unknown === 1 ? '' : 's'} not measured here` : ''}</div>
+    <p class="note muted" style="margin-top:6px">Apps that load tools on demand, like Claude Code and Cursor, only pay for what they use. An app that sends every tool with every message pays all of it: ${Math.round(r.pct * 100)}% of a ${k(r.contextWindow)} window.</p>
     <div class="bar">${known.map((x, i) => `<div title="${esc(x.name)}" style="width:${(x.tokens / r.contextWindow) * 100}%;background:${COLORS[i % COLORS.length]}"></div>`).join('')}</div>
     <ul class="rows">${r.rows.map((x, i) => `<li>
       <input type="checkbox" checked data-name="${esc(x.name)}" aria-label="Keep ${esc(x.name)}">
@@ -233,7 +234,7 @@ async function run() {
     ${r.clashes.length ? `<p class="note warn"><b>${r.clashes.length} name clash${r.clashes.length === 1 ? '' : 'es'}.</b> A tool called ${esc(r.clashes[0].tool)} appears in ${esc(r.clashes[0].servers.join(', '))}.</p>` : ''}
     ${r.writeTools.length ? `<p class="note warn"><b>${r.writeTools.length} write tools.</b> Including ${esc(r.writeTools.slice(0, 3).join(', '))}.</p>` : ''}
     <p class="note"><a href="#" id="download">Download config without unchecked servers ›</a></p>
-    <p class="note muted">Measured ${esc(catalog.measured)} with the latest published versions and a close estimate of Claude's tokenizer. Your versions may differ; the Mac app measures what you actually run.</p>`;
+    <p class="note muted">Measured ${esc(catalog.measured)} with the latest published versions. Token figures are estimates calibrated against Claude Code. Your versions may differ; the Mac app measures what you actually run.</p>`;
   $('download').onclick = e => {
     e.preventDefault();
     const remove = [...report.querySelectorAll('input[type=checkbox]')].filter(c => !c.checked).map(c => c.dataset.name);

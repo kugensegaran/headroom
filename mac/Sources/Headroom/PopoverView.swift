@@ -65,6 +65,9 @@ struct PopoverView: View {
             StorageBar(servers: s.servers, window: s.contextWindow, colors: Self.palette)
                 .frame(height: 10)
                 .padding(.top, 4)
+            Text(s.today.calls == 0 ? "No calls yet today" : "Today: \(Format.grouped(s.today.calls)) calls, \(s.today.failed) failed")
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+                .padding(.bottom, 2)
             ForEach(s.perClient) { c in
                 Text(clientLine(c))
                     .font(.system(size: 11))
@@ -104,7 +107,7 @@ struct PopoverView: View {
     private var notice: some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle").foregroundStyle(.orange)
-            Text("\(s.unusedTools) tools unused this week. Trim to save about \(Format.tokens(s.trimmableTokens)) tokens.")
+            Text("\(s.unusedTools) tools unused this week. Trim to save about \(Format.tokens(s.trimmableTokens)) tokens, estimated.")
                 .font(.system(size: 12))
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)

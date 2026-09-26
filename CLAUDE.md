@@ -131,6 +131,6 @@ Positioning: "Every MCP server, working in every client. See every call." Never 
 - [x] Allow-lists per client: each client can get its own tool set (proxy knows the client from `initialize`). Write and delete tools off by default on new installs; existing installs keep everything on. Dashboard lets you turn tools on per client. Trim works per client. Tests.
 - [x] VS Code guard: warn when VS Code's MCP tools pass 128, and offer a trimmed VS Code profile (used tools first, then read-only ones, capped at 128). Tests.
 - [x] Compatibility fixes as a named list in Settings (app and dashboard), starting with "Remove $schema from tool schemas" (draft-07, Claude Desktop). Each fix is a small module with an id, name, description and apply function, so new ones slot in. Tests.
-- [ ] Copy rewrite around the new positioning: website, popover, onboarding, README. Remove every claim that tools always eat your context. Redeploy the site.
+- [x] Copy rewrite around the new positioning: website, popover, onboarding, README. Remove every claim that tools always eat your context. Redeploy the site.
 
 Definition of done: M1 to M10 ticked except items blocked on a STOP, which are listed in a "Waiting on Kugen" section at the top of this file.

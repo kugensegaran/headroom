@@ -11,7 +11,7 @@ import { pruneEvents } from './store.js';
 import { runDoctor } from './doctor.js';
 import { ensureTrialStarted } from './license.js';
 
-const HELP = `headroom: see what your MCP servers cost you and what they're doing.
+const HELP = `headroom: every MCP server, working in every client. See every call.
 
 Usage:
   headroom audit [--json] [server...]   Connect to every configured server and measure its tools
@@ -64,7 +64,7 @@ function printSummary(s) {
   if (writes.length) console.log(`\nWrite or delete tools loaded: ${writes.length} (e.g. ${writes.slice(0, 4).join(', ')})`);
   if (s.hasUsageData) {
     console.log(`\nToday: ${s.today.calls} tool calls, ${pct(s.today.failedPct)} failed, median ${s.today.medianMs ?? '-'} ms`);
-    if (s.trimmableTokens) console.log(`${s.unusedTools} tools unused in 7 days. \`headroom trim --apply\` saves about ${k(s.trimmableTokens)} tokens per turn.`);
+    if (s.trimmableTokens) console.log(`${s.unusedTools} tools unused in 7 days. \`headroom trim --apply\` saves about ${k(s.trimmableTokens)} tokens, estimated.`);
     if (s.idleServers.length) console.log(`Not called in 7 days: ${s.idleServers.join(', ')}. Consider removing them from your client config.`);
   } else {
     console.log('\nNo usage data yet. Run `headroom install` so calls go through the proxy.');
@@ -151,7 +151,7 @@ async function main() {
       for (const c of plan.changes) {
         console.log(c.action === 'trim' ? `${c.server} in ${c.clientLabel}: keep ${c.keep} of ${c.of} tools, saves about ${k(c.savedTokens)} tokens` : `${c.server}: skipped (${c.reason})`);
       }
-      console.log(`\nTotal saving: about ${k(plan.savedTokens)} tokens per turn.`);
+      console.log(`\nTotal saving: about ${k(plan.savedTokens)} tokens of tool definitions, estimated.`);
       console.log(flag('--apply') ? 'Applied. Restart your MCP clients to reload tool lists.' : 'Dry run. Add --apply to turn the unused tools off.');
       return;
     }
