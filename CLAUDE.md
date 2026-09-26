@@ -2,20 +2,13 @@
 
 ## Waiting on Kugen
 
-- **M5 Lemon Squeezy store and product.** Licensing is built and tested against a fake server; it only needs your ids.
-  1. At app.lemonsqueezy.com create the store (Settings, Stores) and note its numeric **store id**.
-  2. Create a product "Headroom" with one variant, single payment, price of your choice. Under the variant turn on **Generate license keys**, activation limit as you like (2 or 3 Macs is common), license length **Unlimited** (updates are limited to 12 months by the app, not by the key).
-  3. Note the numeric **product id** (and variant id), and the product's checkout URL.
-  4. Tell Claude those three values. They are public ids, not secrets. Never paste an API key into chat; the licence API does not need one.
-
 - **M6 Sparkle signing key.** The private key must be created in your own Keychain. In Terminal, from the repo:
   `cd ~/Documents/headroom/mac && swift package resolve && .build/artifacts/sparkle/Sparkle/bin/generate_keys`
   It prints a public key (a line of base64). That one is public: paste it to Claude, or put it in `mac/Info.plist` under `SUPublicEDKey`. Keep the private key in the Keychain; back it up with `generate_keys -x ~/sparkle-private-key` somewhere safe (a password manager), because losing it means existing installs can never update.
 - **M7 Developer ID certificate.** None is installed on this Mac. In Xcode: Settings, Accounts, your Apple Developer team, Manage Certificates, +, Developer ID Application. Then `security find-identity -v -p codesigning` should list it.
 - **M7 notarization credentials.** In Terminal (not chat): create an app-specific password at account.apple.com, then `xcrun notarytool store-credentials headroom --apple-id kugenesh@gmail.com --team-id YOURTEAMID` and paste the password when it asks.
-- **M8 before the site goes live.** Set the price, checkout URL and (optionally) a contact email in the `STORE` block at the bottom of `site/index.html`, or give them to Claude. Check the refund promise on the privacy page (14 days, taken from the Figma design) is what you want.
 
-A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. One-time purchase, local only. Owner: Kugen Segaran.
+A macOS menu bar app that shows what MCP servers cost in context tokens and what they are doing, live. Free and open source (MIT), local only. Owner: Kugen Segaran.
 
 ## How it fits together
 
@@ -39,8 +32,8 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
   - `trim.js` allow-list from real usage; idle servers are never trimmed
   - `server.js` localhost API; POSTs need header `x-headroom: 1`; Host must be 127.0.0.1 or localhost
   - `dashboard.html` the dashboard window, no build step
-- `mac/` Swift package (macOS 14+). `Engine.swift` process + API client, `PopoverView.swift` UI, `License.swift` Lemon Squeezy + Keychain, `Updater.swift` Sparkle, `AppWindows.swift` onboarding/settings/licence windows.
-  - `src/bridge.js` stdio-to-HTTP bridge, `src/doctor.js`, `src/license.js` trial and licence state, `src/expand.js` config variables and redaction.
+- `mac/` Swift package (macOS 14+). `Engine.swift` process + API client, `PopoverView.swift` UI, `Updater.swift` Sparkle, `AppWindows.swift` onboarding/settings windows.
+  - `src/bridge.js` stdio-to-HTTP bridge, `src/doctor.js` `src/expand.js` config variables and redaction.
 - `site/` static website and in-browser audit (`catalog.json` from scripts/build-catalog.js).
 - Data dir: `~/Library/Application Support/Headroom` (override with `HEADROOM_HOME`).
 
@@ -57,7 +50,7 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 - Authorship: every commit and PR is Kugen Segaran <kugenesh@gmail.com> only. Never add Co-Authored-By, "Generated with Claude Code", session links or any AI credit to commits, PRs, release notes, the app's About box or the website. `.claude/settings.json` turns attribution off and `.githooks/commit-msg` strips it as a backstop.
 - The Swift code was written without a compiler. First job on a Mac: build it and fix whatever fails.
 - Design source of truth: Figma file at https://www.figma.com/design/d1szuOdW0BqvA9Sb8FXPMr (made under the working name "MCP Meter"; the product is now Headroom). Native macOS look: SF Pro, system colors, frosted materials, small controls. No custom fonts, no gradients in UI.
-- Never send tool call content off the machine. No analytics. The only network calls: audits the user starts, licence activation and a weekly validation (key and activation id only, to Lemon Squeezy), and Sparkle update checks.
+- Never send tool call content off the machine. No analytics. The only network calls: audits the user starts and Sparkle update checks.
 - `install` must stay reversible: back up before writing, `uninstall` unwraps in place.
 - UI and docs copy: sentence case, plain and direct, no em dashes.
 - Keep the engine dependency-free beyond js-tiktoken unless there is a strong reason.
@@ -67,7 +60,8 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 - 2026-09-25: engine done and tested against real servers (filesystem, memory, playwright). Swift app builds and runs on this Mac (full Xcode selected, no SDK fallback). Renamed from MCP Meter to Headroom.
 - 2026-09-26: M10 repositioning done (calibrated per-app estimates, per-app tool sets, VS Code guard, named compatibility fixes, new copy, site redeployed). M2 waits only on a Claude Desktop tool call.
 - 2026-09-26 (later): M2 done. Claude Cowork tool calls go through Headroom with status ok.
-- 2026-09-25 (later): M1, M3, M4 done; M5 to M8 built and tested up to the points that need Kugen (see Waiting on Kugen). Swift tests: `cd mac && swift test`. Screenshots for QA: `open build/Headroom.app --args -show popover -appearance dark`, demo data via scripts/demo-data.js.
+- 2026-09-26: Headroom is free and open source (MIT). Licensing, the trial and every feature gate removed (M5 dropped); site shows Download and View on GitHub; repo public.
+- 2026-09-25 (later): M1, M3, M4 done; M6 to M8 built and tested up to the points that need Kugen (see Waiting on Kugen). Screenshots for QA: `open build/Headroom.app --args -show popover -appearance dark`, demo data via scripts/demo-data.js.
 
 ## Roadmap to v1.0 (development complete)
 
@@ -101,14 +95,9 @@ Work top to bottom. Tick each box in this file when it is done, tested and commi
 - [x] Engine lifecycle: restart engine if it dies; stop it on quit; handle port 7777 taken. (Tested: restart after kill, exit on quit and on force quit via --parent-pid, falls back to 7778 when 7777 is taken by something else.)
 - [x] Popover and dashboard checked against the Figma frames in light and dark mode. (Figma has light frames only; dark checked for contrast. Added the Clients and Settings dashboard views from the Figma sidebar, friendly client names, failing servers under Needs attention.)
 
-### M5 Licensing (one-time purchase, 12 months of updates)
-- [ ] WAITING STOP: Kugen creates the Lemon Squeezy store and product, and gives the store id and product/variant ids (not API secrets in chat). Then set `LicenseConfig.storeID`/`productID` in mac/Sources/Headroom/License.swift and add a Buy button with the checkout URL to LicenseView.
-- [x] Licence window: activate, deactivate, show updates-until date. Lemon Squeezy License API (activate/validate), key in Keychain, 14-day full trial, offline grace of 30 days.
-- [x] Unlicensed after trial: audit and dashboard still work; proxy logging, trim and notifications need a licence.
-
 ### M6 Updates
 - [ ] WAITING Sparkle 2 via SwiftPM. STOP: Kugen runs Sparkle's `generate_keys` so the private key stays in his Keychain; public key goes in Info.plist. (Sparkle is integrated, embedded by build-app.sh, and switches itself on once `SUPublicEDKey` is set; "Check for Updates…" appears in the menu then.)
-- [ ] WAITING Appcast hosted on GitHub Releases or Pages; updates offered only while the licence's update window is open. (Window filter done and tested in UpdateWindow; the public repo kugensegaran/headroom-site exists; the first appcast is published by release.sh plus deploy-site.sh once the signing key is set.)
+- [ ] WAITING Appcast hosted on GitHub Releases or Pages. (The public repo kugensegaran/headroom-site exists; the first appcast is published by release.sh plus deploy-site.sh once the signing key is set.)
 
 ### M7 Release pipeline
 - [ ] WAITING `scripts/release.sh`: bundle node, sign node and app with Developer ID (hardened runtime, JIT entitlements for node), notarize, staple, build DMG, draft GitHub Release. Kugen has an Apple Developer account. (Written; `--adhoc` run verified: bundled node runs under hardened runtime with JIT entitlements, app launches from the DMG build. The notarized run waits on the certificate and credentials.)
@@ -131,4 +120,4 @@ Positioning: "Every MCP server, working in every client. See every call." Never 
 - [x] Compatibility fixes as a named list in Settings (app and dashboard), starting with "Remove $schema from tool schemas" (draft-07, Claude Desktop). Each fix is a small module with an id, name, description and apply function, so new ones slot in. Tests.
 - [x] Copy rewrite around the new positioning: website, popover, onboarding, README. Remove every claim that tools always eat your context. Redeploy the site.
 
-Definition of done: M1 to M10 ticked except items blocked on a STOP, which are listed in a "Waiting on Kugen" section at the top of this file.
+Definition of done: M1 to M10 (M5 dropped) ticked except items blocked on a STOP, which are listed in a "Waiting on Kugen" section at the top of this file.
