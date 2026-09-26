@@ -568,3 +568,15 @@ test('website audit: loose JSON, every config shape, catalog lookup, clashes, tr
   assert.deepEqual(Object.keys(trimmed.mcpServers), ['pw', 'fs']);
   assert.equal(trimmed.other, 1);
 });
+
+test('servers start even when the client gives a minimal PATH (Claude Desktop, Finder)', async () => {
+  const { serverEnv } = await import('../src/paths.js');
+  const env = serverEnv({ PATH: '/usr/bin:/bin' }, '/opt/x/node/bin/node');
+  assert.equal(env.PATH.split(':')[0], '/usr/bin', 'existing PATH comes first');
+  assert.ok(env.PATH.split(':').includes('/opt/x/node/bin'));
+  // Real npx, found only through the folder next to node.
+  const s = drive(process.execPath, [CLI, 'proxy', '--name', 'minpath', '--', 'npx', '--no-install', 'node', FAKE], { HOME: process.env.HOME, PATH: '/usr/bin:/bin', HEADROOM_HOME: process.env.HEADROOM_HOME });
+  const init = await s.req('initialize', { protocolVersion: '2025-06-18', capabilities: {}, clientInfo: { name: 'claude-ai' } });
+  assert.equal(init.result.serverInfo.name, 'fake');
+  await s.close();
+});

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { spawn } from 'node:child_process';
 import { lineReader, tryParse } from './lines.js';
+import { serverEnv } from './paths.js';
 
 const PROTOCOL = '2025-06-18';
 const CLIENT_INFO = { name: 'headroom-audit', version: '0.1.0' };
@@ -11,7 +12,7 @@ export function listToolsStdio(entry, { timeoutMs = 30000, cwd } = {}) {
     const child = spawn(entry.command, entry.args || [], {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: cwd && fs.existsSync(cwd) ? cwd : undefined,
-      env: { ...process.env, ...(entry.env || {}) },
+      env: serverEnv({ ...process.env, ...(entry.env || {}) }),
     });
     let nextId = 1;
     const waiting = new Map();

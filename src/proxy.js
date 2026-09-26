@@ -3,6 +3,7 @@ import { lineReader, tryParse } from './lines.js';
 import { appendEvent, getAllowlist, getSettings, saveCatalog } from './store.js';
 import { isWriteTool, serverTokens } from './tokens.js';
 import { isLicensed } from './license.js';
+import { serverEnv } from './paths.js';
 
 /**
  * The part of the proxy that does not care how the server is reached.
@@ -88,7 +89,7 @@ export function createTap({ name, toServer, toClient, stderr = process.stderr })
 
 /** Sit between an MCP client and a stdio MCP server. */
 export function runProxy({ name, command, args, stdin = process.stdin, stdout = process.stdout, stderr = process.stderr }) {
-  const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'], env: process.env });
+  const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'], env: serverEnv() });
   const tap = createTap({ name, stderr, toServer: line => child.stdin.write(line + '\n'), toClient: line => stdout.write(line + '\n') });
 
   stdin.on('data', lineReader(tap.fromClient));

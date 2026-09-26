@@ -52,3 +52,14 @@ export function nodePath(execPath = process.execPath) {
   }
   return execPath;
 }
+
+/**
+ * Environment for starting an MCP server. GUI apps (Claude Desktop, the Mac app from Finder)
+ * get a minimal PATH, so `npx` and the `node` its shebang needs are not found. Add Node's own
+ * folder and the usual install folders, after whatever PATH already has.
+ */
+export function serverEnv(env = process.env, execPath = process.execPath) {
+  const have = (env.PATH || '').split(path.delimiter).filter(Boolean);
+  const extra = [path.dirname(execPath), '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin'];
+  return { ...env, PATH: [...have, ...extra.filter(d => !have.includes(d))].join(path.delimiter) };
+}
