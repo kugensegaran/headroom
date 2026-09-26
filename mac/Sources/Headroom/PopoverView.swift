@@ -56,7 +56,7 @@ struct PopoverView: View {
 
     private var hero: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Context loaded per turn").font(.system(size: 11)).foregroundStyle(.secondary)
+            Text("MCP tool definitions, estimated").font(.system(size: 11)).foregroundStyle(.secondary)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(Format.grouped(s.totalTokens))
                     .font(.system(size: 30, weight: .semibold)).monospacedDigit().kerning(-0.6)
@@ -65,9 +65,11 @@ struct PopoverView: View {
             StorageBar(servers: s.servers, window: s.contextWindow, colors: Self.palette)
                 .frame(height: 10)
                 .padding(.top, 4)
-            Text("\(Format.percent(s.pctOfWindow)) of \(Format.tokens(s.contextWindow)) · budget \(Int(s.budgetPct))%")
-                .font(.system(size: 11))
-                .foregroundStyle(s.overBudget ? Color.orange : Color.secondary)
+            ForEach(s.perClient) { c in
+                Text(clientLine(c))
+                    .font(.system(size: 11))
+                    .foregroundStyle(c.overLimit || (c.loading != "on-demand" && c.pctOfWindow * 100 > s.budgetPct) ? Color.orange : Color.secondary)
+            }
         }
         .padding(EdgeInsets(top: 6, leading: 14, bottom: 12, trailing: 14))
     }
@@ -169,6 +171,15 @@ struct PopoverView: View {
 }
 
 extension PopoverView {
+    fileprivate func clientLine(_ c: Summary.ClientCost) -> String {
+        switch c.loading {
+        case "on-demand": return "\(c.label): loads tools on demand"
+        case "every-turn":
+            return "\(c.label): every turn, \(Format.percent(c.pctOfWindow)) of \(Format.tokens(c.window))" + (c.overLimit ? ", over its \(c.limit ?? 0)-tool limit" : "")
+        default: return "\(c.label): up to \(Format.percent(c.pctOfWindow)) of \(Format.tokens(c.window)), not verified"
+        }
+    }
+
     fileprivate func confirmRestore() {
         let alert = NSAlert()
         alert.messageText = "Restore original configs?"

@@ -47,11 +47,14 @@ function printSummary(s) {
     console.log('No data yet. Run `headroom audit` first.');
     return;
   }
-  console.log(`\nContext loaded per turn: ${s.totalTokens.toLocaleString('en-US')} tokens (${pct(s.pctOfWindow)} of ${k(s.contextWindow)}, budget ${s.budgetPct}%)\n`);
-  console.log(pad('Server', 22) + lpad('Tools', 8) + lpad('Used 7d', 9) + lpad('Tokens', 10));
+  console.log(`\nMCP tool definitions: ${s.totalTokens.toLocaleString('en-US')} tokens, estimated\n`);
+  const how = { 'on-demand': 'loads tools on demand', 'every-turn': 'sends every tool each turn', unverified: 'loading not verified' };
+  for (const c of s.perClient) console.log(`  ${pad(c.label, 16)}${lpad(c.tokens.toLocaleString('en-US'), 8)}  ${how[c.loading]}${c.loading === 'on-demand' ? '' : `, up to ${pct(c.pctOfWindow)} of ${k(c.window)}`}${c.overLimit ? `, over its ${c.limit}-tool limit` : ''}`);
+  console.log('');
+  console.log(pad('Server', 22) + lpad('Tools', 8) + lpad('Used 7d', 9) + lpad('Est. tokens', 13));
   for (const x of s.servers) {
     const tools = x.allowlisted ? `${x.enabledCount}/${x.toolCount}` : x.toolCount;
-    console.log(pad(x.name, 22) + lpad(tools, 8) + lpad(s.hasUsageData ? x.usedCount : '-', 9) + lpad(x.tokens.toLocaleString('en-US'), 10));
+    console.log(pad(x.name, 22) + lpad(tools, 8) + lpad(s.hasUsageData ? x.usedCount : '-', 9) + lpad(x.tokens.toLocaleString('en-US'), 13));
   }
   if (s.clashes.length) {
     console.log(`\nName clashes (${s.clashes.length}):`);

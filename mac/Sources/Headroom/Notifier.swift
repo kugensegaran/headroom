@@ -23,8 +23,8 @@ final class Notifier {
         guard s.license.licensed else { return }
         let over = s.overBudget && s.totalTokens > 0
         if s.notifyOverBudget, over, wasOverBudget == false {
-            post(id: "budget", title: "Over your context budget",
-                 body: "MCP tools now load \(Format.tokens(s.totalTokens)) tokens per turn, \(Format.percent(s.pctOfWindow)) of the window. Your budget is \(Int(s.budgetPct))%.")
+            post(id: "budget", title: "Over budget in \(s.headlineClient ?? "a client")",
+                 body: "MCP tool definitions could take up to \(Format.percent(s.pctOfWindow)) of its \(Format.tokens(s.contextWindow)) window, estimated. Your budget is \(Int(s.budgetPct))%.")
         }
         wasOverBudget = over
 

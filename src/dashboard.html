@@ -93,6 +93,7 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
 .pill { font-size: 11px; padding: 1px 7px; border-radius: 9px; background: var(--fill); color: var(--text2); }
 .pill.warn { color: var(--orange); }
 .client { margin-bottom: 22px; }
+.clients-cost { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-top: 10px; font-size: 12px; }
 .client h2 { margin-bottom: 8px; }
 .form { display: flex; flex-direction: column; max-width: 520px; border: .5px solid var(--line); border-radius: 8px; }
 .form label { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 10px 14px; font-size: 13px; }
@@ -131,12 +132,13 @@ h2 { margin: 0; font-size: 13px; font-weight: 600; }
         <div class="stat"><span class="sub">Tool calls today</span><span class="v" id="s-calls">0</span><span class="sub" id="s-calls-sub"></span></div>
         <div class="stat"><span class="sub">Failed</span><span class="v" id="s-failed">0%</span><span class="sub" id="s-failed-sub"></span></div>
         <div class="stat"><span class="sub">Median latency</span><span class="v" id="s-lat">–</span><span class="sub" id="s-lat-sub"></span></div>
-        <div class="stat"><span class="sub">Context per turn</span><span class="v" id="s-ctx">0</span><span class="sub" id="s-ctx-sub"></span></div>
+        <div class="stat"><span class="sub">Tool definitions, estimated</span><span class="v" id="s-ctx">0</span><span class="sub" id="s-ctx-sub"></span></div>
       </div>
       <div class="budget">
-        <div class="row-between"><h2>Context budget</h2><span class="sub" id="budget-text"></span></div>
+        <div class="row-between"><h2>Tool definitions by server</h2><span class="sub" id="budget-text"></span></div>
         <div class="bar" id="bar"></div>
         <div class="legend" id="legend"></div>
+        <div class="clients-cost" id="clients-cost"></div>
       </div>
       <div class="split">
         <div class="table" id="table-overview"></div>
@@ -202,8 +204,10 @@ function renderSummary() {
   $('s-lat').textContent = fmtMs(s.today.medianMs);
   $('s-lat-sub').textContent = s.today.slowestServer ? 'Slowest: ' + s.today.slowestServer : '';
   $('s-ctx').textContent = k(s.totalTokens);
-  $('s-ctx-sub').textContent = Math.round(s.pctOfWindow * 100) + '% of ' + k(s.contextWindow);
-  $('budget-text').textContent = `${s.totalTokens.toLocaleString()} of ${s.contextWindow.toLocaleString()} tokens per turn · budget ${s.budgetPct}%`;
+  $('s-ctx-sub').textContent = s.headlineClient ? `up to ${Math.round(s.pctOfWindow * 100)}% of ${k(s.contextWindow)} in ${s.headlineClient}` : 'loaded on demand by your clients';
+  $('budget-text').textContent = `${s.totalTokens.toLocaleString()} tokens, estimated · budget ${s.budgetPct}%`;
+  const how = { 'on-demand': 'loads tools on demand', 'every-turn': 'sends every tool each turn', unverified: 'loading not verified yet' };
+  $('clients-cost').innerHTML = (s.perClient || []).map(c => `<div><b>${esc(c.label)}</b> <span class="sub">${k(c.tokens)} est. · ${how[c.loading]}${c.loading === 'on-demand' ? '' : ` · up to ${Math.round(c.pctOfWindow * 100)}% of ${k(c.window)}`}${c.overLimit ? ` · over its ${c.limit}-tool limit` : ''}</span> <span class="sub" title="${esc(c.loadingSource)}; window: ${esc(c.windowSource)}">ⓘ</span></div>`).join('');
   $('bar').innerHTML = s.servers.map(x => `<div title="${esc(x.name)}: ${x.tokens.toLocaleString()} tokens" style="width:${(x.tokens / s.contextWindow * 100).toFixed(3)}%; background:${colorOf[x.name]}"></div>`).join('') + `<div class="budget-mark" style="left:${s.budgetPct}%"></div>`;
   $('legend').innerHTML = s.servers.map(x => `<span><span class="dot" style="background:${colorOf[x.name]}"></span>${esc(x.name)} <span class="sub">${k(x.tokens)}</span></span>`).join('') || '<span class="sub">Run <code>headroom audit</code> to measure your servers.</span>';
   const nowH = new Date().getHours();
@@ -218,7 +222,7 @@ function renderSummary() {
   if (fixes.length) issues.push(['var(--blue)', `Fixed ${fixes.reduce((n, f) => n + f.fixed, 0)} schemas for ${fixes.map(f => f.server).join(', ')}`, 'Removed $schema declarations that Claude Desktop rejects. Turn this off in Settings, Compatibility fixes.']);
   if (s.hasUsageData && s.unusedTools) issues.push(['var(--orange)', `${s.unusedTools} tools never called`, `Trim them to save about ${k(s.trimmableTokens)} tokens per turn.`]);
   for (const c of s.clashes.slice(0, 3)) issues.push(['var(--orange)', `${c.tool} appears ${c.servers.length} times`, `${c.servers.join(', ')} all expose a tool named ${c.tool}.`]);
-  if (s.pctOfWindow * 100 > s.budgetPct) issues.push(['var(--orange)', 'Over your context budget', `${Math.round(s.pctOfWindow * 100)}% of the window goes to tool definitions.`]);
+  if (s.headlineClient && s.pctOfWindow * 100 > s.budgetPct) issues.push(['var(--orange)', `Over budget in ${s.headlineClient}`, `Tool definitions could take up to ${Math.round(s.pctOfWindow * 100)}% of its ${k(s.contextWindow)} window.`]);
   $('issues').innerHTML = issues.map(([c, t, b]) => `<div class="issue"><span class="dot" style="background:${c}"></span><div><b>${esc(t)}</b><span>${esc(b)}</span></div></div>`).join('') || '<div class="sub">Nothing needs attention.</div>';
   $('pause').textContent = s.paused ? 'Resume' : 'Pause';
   renderServers();

@@ -615,3 +615,31 @@ test('compatibility fix removes $schema from tool schemas, logs it, and can be t
   assert.equal(readEvents().filter(e => e.method === 'compat' && e.server === 'draft7-off').length, 0);
   setSettings({ compatFixes: true });
 });
+
+test('costs are calibrated and shown per client, with how each client loads tools and its window', async () => {
+  const { toolTokens, rawToolTokens, CALIBRATION } = await import('../src/tokens.js');
+  const { windowForModel, latestClaudeCodeModel, LOADING } = await import('../src/profiles.js');
+  const t = { name: 'x', description: 'Read a file from disk', inputSchema: { type: 'object' } };
+  assert.equal(toolTokens(t), Math.round(rawToolTokens(t) * CALIBRATION));
+  assert.equal(windowForModel('claude-opus-5-5'), 1000000);
+  assert.equal(windowForModel('claude-sonnet-5[1m]'), 1000000);
+  assert.equal(windowForModel('claude-unknown'), null);
+  assert.equal(LOADING['claude-code'].loading, 'on-demand');
+  assert.equal(LOADING['claude-desktop'].loading, 'unverified');
+
+  const projects = path.join(process.env.HEADROOM_USER_HOME, '.claude', 'projects', 'p');
+  fs.mkdirSync(projects, { recursive: true });
+  fs.writeFileSync(path.join(projects, 'old.jsonl'), '{"message":{"model":"claude-sonnet-5"}}\n');
+  await new Promise(r => setTimeout(r, 20));
+  fs.writeFileSync(path.join(projects, 'new.jsonl'), '{"message":{"model":"claude-haiku-4"}}\n{"message":{"model":"claude-opus-5-5","content":"secret stuff"}}\n');
+  assert.equal(latestClaudeCodeModel(), 'claude-opus-5-5');
+
+  // Cursor config has fake + remote; Cursor loads on demand, so it never drives the headline.
+  const sum = buildSummary();
+  const cursor = sum.perClient.find(c => c.id === 'cursor');
+  assert.equal(cursor.loading, 'on-demand');
+  assert.ok(cursor.tokens > 0 && cursor.measured.includes('fake'));
+  assert.equal(sum.estimated, true);
+  assert.ok(sum.perClient.every(c => c.loading === 'on-demand') ? sum.pctOfWindow === 0 : true);
+  fs.rmSync(path.join(process.env.HEADROOM_USER_HOME, '.claude'), { recursive: true });
+});

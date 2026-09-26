@@ -13,7 +13,7 @@ struct HeadroomApp: App {
             // Status item: gauge plus context share, e.g. "29%"
             HStack(spacing: 4) {
                 Image(nsImage: StatusIcon.image(level: engine.summary.pctOfWindow))
-                if engine.reachable, engine.summary.totalTokens > 0 {
+                if engine.reachable, engine.summary.headlineClient != nil, engine.summary.totalTokens > 0 {
                     Text(Format.percent(engine.summary.pctOfWindow))
                         .monospacedDigit()
                 }

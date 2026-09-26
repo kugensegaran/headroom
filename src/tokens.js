@@ -3,10 +3,18 @@ import { getEncoding } from 'js-tiktoken';
 let enc;
 
 /**
- * Estimated tokens a tool definition adds to every turn.
- * Claude's tokenizer is not public, so this uses cl100k_base as a close estimate.
+ * Claude counts about 1.87 times what cl100k_base gives for tool definitions
+ * (Claude Code /context against the filesystem and memory servers, docs/ACCURACY.md).
  */
+export const CALIBRATION = 1.87;
+
+/** Estimated tokens for one tool definition, calibrated to what Claude reports. */
 export function toolTokens(tool) {
+  return Math.round(rawToolTokens(tool) * CALIBRATION);
+}
+
+/** cl100k_base count, uncalibrated. Claude's tokenizer is not public. */
+export function rawToolTokens(tool) {
   enc ||= getEncoding('cl100k_base');
   const def = {
     name: tool.name,

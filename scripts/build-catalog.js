@@ -29,7 +29,7 @@ const SERVERS = [
   { id: 'cloudflare-docs', name: 'Cloudflare Docs', entry: { url: 'https://docs.mcp.cloudflare.com/mcp' }, match: ['docs.mcp.cloudflare.com'] },
 ];
 
-const out = { measured: new Date().toISOString().slice(0, 10), tokenizer: 'cl100k_base estimate', servers: [] };
+const out = { measured: new Date().toISOString().slice(0, 10), tokenizer: 'cl100k_base x 1.87, calibrated against Claude Code /context', calibration: 1.87, servers: [] };
 for (const s of SERVERS) {
   process.stderr.write(`${s.id}... `);
   try {
