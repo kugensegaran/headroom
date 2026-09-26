@@ -69,6 +69,7 @@ mac/ SwiftUI MenuBarExtra app: starts `serve`, polls /api/summary, drives trim/p
 ## Status
 
 - 2026-09-25: engine done and tested against real servers (filesystem, memory, playwright). Swift app builds and runs on this Mac (full Xcode selected, no SDK fallback). Renamed from MCP Meter to Headroom.
+- 2026-09-26: M10 repositioning done (calibrated per-app estimates, per-app tool sets, VS Code guard, named compatibility fixes, new copy, site redeployed). M2 waits only on a Claude Desktop tool call.
 - 2026-09-25 (later): M1, M3, M4 done; M5 to M8 built and tested up to the points that need Kugen (see Waiting on Kugen). Swift tests: `cd mac && swift test`. Screenshots for QA: `open build/Headroom.app --args -show popover -appearance dark`, demo data via scripts/demo-data.js.
 
 ## Roadmap to v1.0 (development complete)
